@@ -6,8 +6,19 @@ import styles from './page.module.css';
 
 export default function HomePage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [joinRoomInput, setJoinRoomInput] = useState('');
   const router = useRouter();
+
+  // Create Room 모달 상태
+  const [createRoomData, setCreateRoomData] = useState({
+    location: '',
+    startTime: '',
+    delivery: false,
+    deliveryTime: '30',
+    visit: false,
+    visitTime: '10'
+  });
 
   // 방 참여 함수
   const joinRoom = (inputRoomId: string) => {
@@ -37,9 +48,50 @@ export default function HomePage() {
     setJoinRoomInput('');
   };
 
-  // Create Room 버튼 클릭 (현재는 비활성화)
+  // Create Room 모달 열기
+  const openCreateModal = () => {
+    console.log('Create Room 모달 열기');
+    setShowCreateModal(true);
+  };
+
+  // Create Room 모달 닫기
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setCreateRoomData({
+      location: '',
+      startTime: '',
+      delivery: false,
+      deliveryTime: '30',
+      visit: false,
+      visitTime: '10'
+    });
+  };
+
+  // Create Room 데이터 업데이트
+  const updateCreateRoomData = (field: string, value: any) => {
+    setCreateRoomData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // 방 생성 함수
   const createRoom = () => {
-    alert('Create Room 기능은 현재 개발 중입니다. 나중에 틴더 기능과 함께 추가될 예정입니다!');
+    console.log('방 생성 데이터:', createRoomData);
+    
+    if (!createRoomData.location.trim()) {
+      alert('위치를 입력해주세요.');
+      return;
+    }
+    
+    if (!createRoomData.startTime) {
+      alert('투표 시작 시간을 선택해주세요.');
+      return;
+    }
+
+    // 여기에 실제 방 생성 로직을 추가할 수 있습니다
+    alert('방이 생성되었습니다!');
+    closeCreateModal();
   };
 
   return (
@@ -63,7 +115,7 @@ export default function HomePage() {
               {/* Create Room 버튼 */}
               <button 
                 className={styles.createButton}
-                onClick={createRoom}
+                onClick={openCreateModal}
               >
                 Create Room
               </button>
@@ -109,6 +161,110 @@ export default function HomePage() {
             >
               취소
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Create Room 모달 */}
+      {showCreateModal && (
+        <div className={styles.modalOverlay} onClick={closeCreateModal}>
+          <div className={styles.createModalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>그룹 생성</h2>
+            
+            {/* 위치 입력 */}
+            <div className={styles.inputGroup}>
+              <label className={styles.inputLabel}>📍 현재 위치</label>
+              <input
+                className={styles.modalInput}
+                type="text"
+                placeholder="현재 위치"
+                value={createRoomData.location}
+                onChange={(e) => updateCreateRoomData('location', e.target.value)}
+              />
+            </div>
+
+            {/* 투표 시작 시간 */}
+            <div className={styles.inputGroup}>
+              <label className={styles.inputLabel}>🕐 회의 시작 시간</label>
+              <input
+                className={styles.modalInput}
+                type="datetime-local"
+                value={createRoomData.startTime}
+                onChange={(e) => updateCreateRoomData('startTime', e.target.value)}
+              />
+            </div>
+
+            {/* Delivery 옵션 */}
+            <div className={styles.optionGroup}>
+              <div className={styles.checkboxGroup}>
+                <input
+                  type="checkbox"
+                  id="delivery"
+                  checked={createRoomData.delivery}
+                  onChange={(e) => updateCreateRoomData('delivery', e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <label htmlFor="delivery" className={styles.checkboxLabel}>Delivery</label>
+              </div>
+              {createRoomData.delivery && (
+                <select
+                  className={styles.timeSelect}
+                  value={createRoomData.deliveryTime}
+                  onChange={(e) => updateCreateRoomData('deliveryTime', e.target.value)}
+                >
+                  <option value="10">10분</option>
+                  <option value="20">20분</option>
+                  <option value="30">30분</option>
+                  <option value="40">40분</option>
+                  <option value="50">50분</option>
+                  <option value="60">60분</option>
+                  <option value="0">무관</option>
+                </select>
+              )}
+            </div>
+
+            {/* Visit 옵션 */}
+            <div className={styles.optionGroup}>
+              <div className={styles.checkboxGroup}>
+                <input
+                  type="checkbox"
+                  id="visit"
+                  checked={createRoomData.visit}
+                  onChange={(e) => updateCreateRoomData('visit', e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <label htmlFor="visit" className={styles.checkboxLabel}>Visit</label>
+              </div>
+              {createRoomData.visit && (
+                <select
+                  className={styles.timeSelect}
+                  value={createRoomData.visitTime}
+                  onChange={(e) => updateCreateRoomData('visitTime', e.target.value)}
+                >
+                  <option value="5">5분</option>
+                  <option value="10">10분</option>
+                  <option value="20">20분</option>
+                  <option value="30">30분</option>
+                  <option value="40">40분</option>
+                </select>
+              )}
+            </div>
+
+            {/* 버튼들 */}
+            <div className={styles.modalButtonGroup}>
+              <button
+                className={styles.modalButton}
+                onClick={createRoom}
+              >
+                Create room
+              </button>
+              <button
+                className={styles.modalButton}
+                onClick={closeCreateModal}
+              >
+                취소
+              </button>
+            </div>
           </div>
         </div>
       )}
