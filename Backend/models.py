@@ -18,13 +18,13 @@ class DetailCustom(BaseModel):
 
 class Candidate(BaseModel):
     added_by: str
-    bad: Optional[int] = 0
-    detail: Union[DetailKakao, DetailYogiyo, DetailCustom, dict]
-    good: Optional[int] = 0
     name: str
+    type: str
+    detail: dict
+    good: Optional[int] = 0
+    bad: Optional[int] = 0
     never: Optional[int] = 0
     soso: Optional[int] = 0
-    type: str
 
 class Participant(BaseModel):
     nickname: str
@@ -41,7 +41,7 @@ class GroupData(BaseModel):
     candidates: Optional[Dict[str, Candidate]] = Field(
         default=None, description="후보 목록. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
     delivery: bool
-    delivery_time: Optional[str] = None
+    delivery_time: Optional[int] = None
     offline: bool
     participants: Optional[Dict[str, Participant]] = Field(
         default=None, description="참가자 목록. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
@@ -62,7 +62,7 @@ class GroupData(BaseModel):
         if self.votes is None:
             self.votes = {}
         errors = []
-        if self.delivery and not self.delivery_time:
+        if self.delivery and self.delivery_time is None:
             errors.append('delivery가 true일 때 delivery_time은 필수입니다.')
         if self.offline and self.radius is None:
             errors.append('offline이 true일 때 radius는 필수입니다.')
