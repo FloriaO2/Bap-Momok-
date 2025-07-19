@@ -147,23 +147,22 @@ async def upload_json_file(file: UploadFile = File(...)):
 
 @app.post("/groups/{group_id}/candidates")
 def add_candidate(group_id: str, candidate_id: str, candidate: Candidate):
-    """특정 그룹에 후보(음식점)를 추가합니다."""
     group = get_group(group_id)
     if group is None:
         raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    # 후보 추가
     group.candidates[candidate_id] = candidate
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
 @app.post("/groups/{group_id}/votes/{user_id}")
 def add_or_update_vote(group_id: str, user_id: str, vote: Vote):
-    """특정 그룹에 특정 유저의 투표 내역을 추가/수정합니다."""
     group = get_group(group_id)
     if group is None:
         raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    # 투표 내역 추가/수정
-    group.votes[user_id] = vote
+    prev_vote = group.votes.get(user_id, {})
+    new_vote = vote.__root__
+    prev_vote.update(new_vote)
+    group.votes[user_id] = prev_vote
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
 

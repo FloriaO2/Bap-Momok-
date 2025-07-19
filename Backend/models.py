@@ -18,12 +18,12 @@ class DetailCustom(BaseModel):
 
 class Candidate(BaseModel):
     added_by: str
-    bad: int
-    detail: Union[DetailKakao, DetailYogiyo, DetailCustom]
-    good: int
+    bad: Optional[int] = 0
+    detail: Union[DetailKakao, DetailYogiyo, DetailCustom, dict]
+    good: Optional[int] = 0
     name: str
-    never: int
-    soso: int
+    never: Optional[int] = 0
+    soso: Optional[int] = 0
     type: str
 
 class Participant(BaseModel):
@@ -35,9 +35,7 @@ class ParticipantJoin(BaseModel):
     nickname: str
 
 class Vote(BaseModel):
-    candidate_1: Optional[str] = None
-    candidate_2: Optional[str] = None
-    candidate_3: Optional[str] = None
+    __root__: Dict[str, str]
 
 class GroupData(BaseModel):
     candidates: Optional[Dict[str, Candidate]] = Field(
