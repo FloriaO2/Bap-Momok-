@@ -104,24 +104,17 @@ export default function HomePage() {
   };
 
   // 방 생성 함수
-  const createRoom = () => {
+  const createRoom = async () => {
     console.log('방 생성 데이터:', createRoomData);
-    
-    if (!createRoomData.location.trim()) {
-      alert('장소를 입력해주세요.');
-      return;
-    }
     
     if (!createRoomData.startTime) {
       alert('후보군 추천 시간을 선택해주세요.');
       return;
     }
-
     if (locationLat === null || locationLng === null) {
       alert('지도의 위치를 지정해주세요.');
       return;
     }
-
     if (createRoomData.delivery && !createRoomData.deliveryTime) {
       alert('최대 배달 소요 시간을 선택해주세요.');
       return;
@@ -131,9 +124,43 @@ export default function HomePage() {
       return;
     }
 
-    // 여기에 실제 방 생성 로직을 추가할 수 있습니다
-    console.log('API로 보낼 위도/경도:', locationLat, locationLng);
-    alert('방이 생성되었습니다!');
+    // 값 변환
+    const delivery = createRoomData.delivery;
+    const offline = createRoomData.visit;
+    const delivery_time = delivery ? Number(createRoomData.deliveryTime) : 0;
+    const radius = delivery ? 70 * delivery_time : 0;
+    const x = locationLat;
+    const y = locationLng;
+    const start_votingtime = createRoomData.startTime;
+
+    const body = {
+      data: {
+        delivery,
+        delivery_time,
+        offline,
+        radius,
+        start_votingtime,
+        state: 'suggestion',
+        x,
+        y
+      }
+    };
+
+    try {
+      const response = await fetch('http://localhost:8000/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const result = await response.json();
+      if (result.group_id) {
+        router.push(`/participate/${result.group_id}`);
+      } else {
+        alert('방 생성 실패');
+      }
+    } catch (e) {
+      alert('에러 발생');
+    }
     closeCreateModal();
   };
 
