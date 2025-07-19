@@ -1,5 +1,5 @@
 # main.py
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
 from models import GroupCreate, GroupUpdate, GroupData, GroupsData, Candidate, Vote, ParticipantJoin, Participant
 from database import (
@@ -29,6 +29,12 @@ app.add_middleware(
 def generate_random_id(length=20):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choices(chars, k=length))
+
+def get_next_candidate_id(group):
+    existing = group.candidates.keys()
+    nums = [int(k.split('_')[-1]) for k in existing if k.startswith('candidate_') and k.split('_')[-1].isdigit()]
+    next_num = max(nums) + 1 if nums else 1
+    return f"candidate_{next_num}"
 
 @app.get("/")
 def read_root():
@@ -84,75 +90,97 @@ def delete_existing_group(group_id: str):
     return {"message": "그룹이 성공적으로 삭제되었습니다", "group_id": group_id}
 
 # 새로운 전체 데이터 구조 API 엔드포인트들
-@app.get("/data")
-def get_full_data():
-    """전체 데이터 구조를 조회합니다 (groups 루트 키 포함)."""
-    return get_groups_data()
-
-@app.post("/data")
-def create_full_data(groups_data: GroupsData):
-    """전체 데이터 구조를 생성합니다 (groups 루트 키 포함)."""
-    try:
-        created_data = create_groups_data(groups_data)
-        return {
-            "message": "전체 데이터가 성공적으로 생성되었습니다",
-            "data": created_data
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"데이터 생성 중 오류가 발생했습니다: {str(e)}")
-
-@app.put("/data")
-def update_full_data(groups_data: GroupsData):
-    """전체 데이터 구조를 업데이트합니다 (groups 루트 키 포함)."""
-    try:
-        updated_data = update_groups_data(groups_data)
-        return {
-            "message": "전체 데이터가 성공적으로 업데이트되었습니다",
-            "data": updated_data
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"데이터 업데이트 중 오류가 발생했습니다: {str(e)}")
-
-# JSON 파일 업로드 기능
-@app.post("/upload")
-async def upload_json_file(file: UploadFile = File(...)):
-    """JSON 파일을 업로드하여 데이터를 생성합니다."""
-    if not file.filename.endswith('.json'):
-        raise HTTPException(status_code=400, detail="JSON 파일만 업로드 가능합니다")
-    
-    try:
-        content = await file.read()
-        data = json.loads(content.decode('utf-8'))
-        
-        # 데이터 구조 검증
-        if "groups" not in data:
-            raise HTTPException(status_code=400, detail="올바른 데이터 구조가 아닙니다. 'groups' 키가 필요합니다")
-        
-        # Pydantic 모델로 검증
-        groups_data = GroupsData(**data)
-        
-        # 데이터베이스에 저장
-        created_data = create_groups_data(groups_data)
-        
-        return {
-            "message": "JSON 파일이 성공적으로 업로드되었습니다",
-            "filename": file.filename,
-            "groups_count": len(created_data.groups),
-            "data": created_data
-        }
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="올바른 JSON 형식이 아닙니다")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"파일 업로드 중 오류가 발생했습니다: {str(e)}")
+# /health, /upload, /data 관련 엔드포인트 모두 삭제
 
 @app.post("/groups/{group_id}/candidates")
-def add_candidate(group_id: str, candidate_id: str, candidate: Candidate):
+def add_candidate(group_id: str, candidate: Candidate):
     group = get_group(group_id)
     if group is None:
         raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    candidate_id = get_next_candidate_id(group)
     group.candidates[candidate_id] = candidate
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+
+@app.post("/groups/{group_id}/candidates/kakao")
+def add_kakao_candidate(
+    group_id: str,
+    added_by: str = Body(...),
+    rank: int = Body(...),
+    kakao_data: dict = Body(...)
+):
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    candidate_id = get_next_candidate_id(group)
+    detail = {
+        "addr": kakao_data.get("address_name"),
+        "category": kakao_data.get("category_name"),
+        "kakao_id": kakao_data.get("id")
+    }
+    candidate = Candidate(
+        added_by=added_by,
+        name=kakao_data.get("place_name", ""),
+        rank=rank,
+        type="kakao",
+        detail=detail
+    )
+    group.candidates[candidate_id] = candidate
+    update_group(group_id, GroupUpdate(data=group))
+    return {"message": "카카오 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+
+@app.post("/groups/{group_id}/candidates/yogiyo")
+def add_yogiyo_candidate(
+    group_id: str,
+    added_by: str = Body(...),
+    rank: int = Body(...),
+    yogiyo_data: dict = Body(...)
+):
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    candidate_id = get_next_candidate_id(group)
+    detail = {
+        "category": yogiyo_data.get("categories", []),
+        "delivery_time": group.delivery_time,
+        "yogiyo_id": yogiyo_data.get("id")
+    }
+    candidate = Candidate(
+        added_by=added_by,
+        name=yogiyo_data.get("name", ""),
+        rank=rank,
+        type="yogiyo",
+        detail=detail
+    )
+    group.candidates[candidate_id] = candidate
+    update_group(group_id, GroupUpdate(data=group))
+    return {"message": "요기요 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+
+@app.post("/groups/{group_id}/candidates/custom")
+def add_custom_candidate(
+    group_id: str,
+    added_by: str = Body(...),
+    name: str = Body(...),
+    URL: str = Body(...),
+    detail_text: str = Body(...)
+):
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    candidate_id = get_next_candidate_id(group)
+    detail = {
+        "URL": URL,
+        "detail": detail_text
+    }
+    candidate = Candidate(
+        added_by=added_by,
+        name=name,
+        type="custom",
+        detail=detail
+    )
+    group.candidates[candidate_id] = candidate
+    update_group(group_id, GroupUpdate(data=group))
+    return {"message": "커스텀 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
 @app.post("/groups/{group_id}/votes/{user_id}")
 def add_or_update_vote(group_id: str, user_id: str, vote: Vote):
@@ -180,13 +208,3 @@ def join_group(group_id: str, join: ParticipantJoin):
     group.participants[participant_id] = participant
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "참가자가 성공적으로 추가되었습니다", "participant_id": participant_id, "data": group}
-
-@app.get("/health")
-def health_check():
-    """서버 상태를 확인합니다."""
-    firebase_status = "connected" if firebase_initialized else "disconnected"
-    return {
-        "status": "healthy", 
-        "message": "서버가 정상적으로 작동 중입니다",
-        "firebase": firebase_status
-    }
