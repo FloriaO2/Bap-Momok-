@@ -216,3 +216,6 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json 
+
+*.pyc
+__pycache__/

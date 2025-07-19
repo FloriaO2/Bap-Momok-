@@ -160,7 +160,7 @@ def add_or_update_vote(group_id: str, user_id: str, vote: Vote):
     if group is None:
         raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
     prev_vote = group.votes.get(user_id, {})
-    new_vote = vote.__root__
+    new_vote = vote.root
     prev_vote.update(new_vote)
     group.votes[user_id] = prev_vote
     update_group(group_id, GroupUpdate(data=group))

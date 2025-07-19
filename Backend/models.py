@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, RootModel
 from typing import Dict, List, Optional, Union
 from datetime import datetime
 
@@ -34,8 +34,8 @@ class Participant(BaseModel):
 class ParticipantJoin(BaseModel):
     nickname: str
 
-class Vote(BaseModel):
-    __root__: Dict[str, str]
+class Vote(RootModel[dict[str, str]]):
+    pass
 
 class GroupData(BaseModel):
     candidates: Optional[Dict[str, Candidate]] = Field(
