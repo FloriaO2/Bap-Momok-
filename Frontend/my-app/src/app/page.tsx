@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
+import KakaoMap from './components/KakaoMap';
 
 export default function HomePage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -183,15 +184,22 @@ export default function HomePage() {
               />
             </div>
 
-            {/* 투표 시작 시간 */}
+            {/* 카카오 지도 */}
+            <KakaoMap />
+
+            {/* 후보군 추천 시간 */}
             <div className={styles.inputGroup}>
-              <label className={styles.inputLabel}>🕐 회의 시작 시간</label>
-              <input
-                className={styles.modalInput}
-                type="datetime-local"
+              <label className={styles.inputLabel}>⏰ 후보군 추천 시간</label>
+              <select
+                className={styles.timeSelect}
                 value={createRoomData.startTime}
                 onChange={(e) => updateCreateRoomData('startTime', e.target.value)}
-              />
+              >
+                <option value="">시간 선택</option>
+                {[...Array(10)].map((_, i) => (
+                  <option key={i+1} value={String(i+1)}>{i+1}분</option>
+                ))}
+              </select>
             </div>
 
             {/* Delivery 옵션 */}
