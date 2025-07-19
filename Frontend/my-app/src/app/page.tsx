@@ -185,7 +185,9 @@ export default function HomePage() {
             </div>
 
             {/* 카카오 지도 */}
-            <KakaoMap />
+            <KakaoMap onLocationChange={(lat, lng) => {
+              updateCreateRoomData('location', `${lat},${lng}`);
+            }} />
 
             {/* 후보군 추천 시간 */}
             <div className={styles.inputGroup}>
