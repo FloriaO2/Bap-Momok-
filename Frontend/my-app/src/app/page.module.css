@@ -59,7 +59,7 @@
 
 .createButton {
   flex: 1;
-  background-color: #8B4513;
+  background-color: #994d52;
   color: white;
   border: none;
   padding: 18px 30px;
@@ -72,7 +72,7 @@
 }
 
 .createButton:hover {
-  background-color: #A0522D;
+  background-color: #994d52;
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
@@ -155,8 +155,31 @@
 
 .modalInput:focus {
   outline: none;
-  border-color: #8B4513;
-  box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
+  border-color: #994d52;
+  box-shadow: 0 0 0 2px rgba(153, 77, 82, 0.2);
+}
+
+.searchButton {
+  height: 50px;
+  min-width: 60px;
+  max-width: 90px;
+  padding: 0 18px;
+  background-color: #994d52;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchButton:hover {
+  background-color: #994d52;
 }
 
 .inputGroup {
@@ -215,8 +238,8 @@
 
 .timeSelect:focus {
   outline: none;
-  border-color: #8B4513;
-  box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
+  border-color: #994d52;
+  box-shadow: 0 0 0 2px rgba(153, 77, 82, 0.2);
 }
 
 .modalButtonGroup {
@@ -228,7 +251,7 @@
 
 .modalButton {
   flex: 1;
-  background-color: #8B0000;
+  background-color: #994d52;
   color: white;
   border: none;
   padding: 12px 30px;
@@ -240,7 +263,7 @@
 }
 
 .modalButton:hover {
-  background-color: #A00000;
+  background-color: #994d52;
   transform: translateY(-1px);
 }
 

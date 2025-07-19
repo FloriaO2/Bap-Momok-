@@ -1,15 +1,20 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface KakaoMapProps {
   onLocationChange?: (lat: number, lng: number) => void;
+  searchKeyword?: string;
+  centerLat?: number | null;
+  centerLng?: number | null;
 }
 
-const KakaoMap = ({ onLocationChange }: KakaoMapProps) => {
+const KakaoMap = ({ onLocationChange, searchKeyword, centerLat, centerLng }: KakaoMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
+  const [searching, setSearching] = useState(false);
 
+  // 지도/마커 생성 및 중심 이동 시 콜백
   useEffect(() => {
     if (typeof window === "undefined") return;
     function createMapAndMarker() {
@@ -27,10 +32,12 @@ const KakaoMap = ({ onLocationChange }: KakaoMapProps) => {
           map: mapInstance.current,
         });
       }
-      // 지도 이동 시 마커도 중심으로 이동
+      // 지도 이동 시 마커도 중심으로 이동, 콜백 호출
       if (mapInstance.current && markerInstance.current) {
         kakao.maps.event.addListener(mapInstance.current, 'center_changed', function() {
-          markerInstance.current.setPosition(mapInstance.current.getCenter());
+          const center = mapInstance.current.getCenter();
+          markerInstance.current.setPosition(center);
+          if (onLocationChange) onLocationChange(center.getLat(), center.getLng());
         });
       }
     }
@@ -45,7 +52,7 @@ const KakaoMap = ({ onLocationChange }: KakaoMapProps) => {
     }
     const script = document.createElement("script");
     script.id = "kakao-map-script";
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`;
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false&libraries=services`;
     script.async = true;
     script.onload = () => {
       // @ts-ignore
@@ -56,6 +63,49 @@ const KakaoMap = ({ onLocationChange }: KakaoMapProps) => {
     document.head.appendChild(script);
     // eslint-disable-next-line
   }, []);
+
+  // 외부에서 검색어가 들어오면 지도 중심 이동
+  useEffect(() => {
+    if (!searchKeyword || !searchKeyword.trim()) return;
+    // @ts-ignore
+    if (window.kakao && window.kakao.maps && window.kakao.maps.services && mapInstance.current) {
+      setSearching(true);
+      // @ts-ignore
+      const ps = new window.kakao.maps.services.Places();
+      ps.keywordSearch(searchKeyword, (data: any[], status: string) => {
+        setSearching(false);
+        if (status === 'OK' && data.length > 0) {
+          const place = data[0];
+          const lat = parseFloat(place.y);
+          const lng = parseFloat(place.x);
+          // @ts-ignore
+          const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
+          mapInstance.current.setCenter(moveLatLng);
+          if (onLocationChange) onLocationChange(lat, lng);
+        } else {
+          // 검색 결과 없음
+        }
+      });
+    }
+  }, [searchKeyword]);
+
+  // centerLat, centerLng가 바뀌면 지도 중심 이동
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.kakao &&
+      window.kakao.maps &&
+      mapInstance.current &&
+      centerLat !== null &&
+      centerLng !== null
+    ) {
+      // @ts-ignore
+      const kakao = window.kakao;
+      // @ts-ignore
+      const moveLatLng = new kakao.maps.LatLng(centerLat, centerLng);
+      mapInstance.current.setCenter(moveLatLng);
+    }
+  }, [centerLat, centerLng]);
 
   // GPS 버튼 클릭 시 현재 위치로 이동
   const handleGpsClick = () => {
@@ -97,7 +147,7 @@ const KakaoMap = ({ onLocationChange }: KakaoMapProps) => {
           bottom: 16,
           zIndex: 10,
           background: "#fff",
-          border: "1px solid #8B4513",
+          border: "1px solid #994d52",
           borderRadius: "50%",
           width: 48,
           height: 48,
@@ -111,6 +161,10 @@ const KakaoMap = ({ onLocationChange }: KakaoMapProps) => {
       >
         <span role="img" aria-label="gps">📍</span>
       </button>
+      {/* 검색중 표시 */}
+      {searching && (
+        <div style={{position:'absolute',top:8,right:8,zIndex:30,background:'#fff',padding:'4px 12px',borderRadius:8,fontSize:14,border:'1px solid #ccc'}}>검색중...</div>
+      )}
     </div>
   );
 };

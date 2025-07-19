@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import KakaoMap from './components/KakaoMap';
@@ -16,10 +16,37 @@ export default function HomePage() {
     location: '',
     startTime: '',
     delivery: false,
-    deliveryTime: '30',
+    deliveryTime: '',
     visit: false,
-    visitTime: '10'
+    visitTime: ''
   });
+
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [centerLat, setCenterLat] = useState<number | null>(null);
+  const [centerLng, setCenterLng] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (showCreateModal) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            setLocationLat(lat);
+            setLocationLng(lng);
+            setCenterLat(lat);
+            setCenterLng(lng);
+          },
+          (err) => {
+            // 위치 권한 거부 등 무시
+          }
+        );
+      }
+    }
+    // eslint-disable-next-line
+  }, [showCreateModal]);
 
   // 방 참여 함수
   const joinRoom = (inputRoomId: string) => {
@@ -62,9 +89,9 @@ export default function HomePage() {
       location: '',
       startTime: '',
       delivery: false,
-      deliveryTime: '30',
+      deliveryTime: '',
       visit: false,
-      visitTime: '10'
+      visitTime: ''
     });
   };
 
@@ -81,16 +108,31 @@ export default function HomePage() {
     console.log('방 생성 데이터:', createRoomData);
     
     if (!createRoomData.location.trim()) {
-      alert('위치를 입력해주세요.');
+      alert('장소를 입력해주세요.');
       return;
     }
     
     if (!createRoomData.startTime) {
-      alert('투표 시작 시간을 선택해주세요.');
+      alert('후보군 추천 시간을 선택해주세요.');
+      return;
+    }
+
+    if (locationLat === null || locationLng === null) {
+      alert('지도의 위치를 지정해주세요.');
+      return;
+    }
+
+    if (createRoomData.delivery && !createRoomData.deliveryTime) {
+      alert('최대 배달 소요 시간을 선택해주세요.');
+      return;
+    }
+    if (createRoomData.visit && !createRoomData.visitTime) {
+      alert('최대 도보 소요 시간을 선택해주세요.');
       return;
     }
 
     // 여기에 실제 방 생성 로직을 추가할 수 있습니다
+    console.log('API로 보낼 위도/경도:', locationLat, locationLng);
     alert('방이 생성되었습니다!');
     closeCreateModal();
   };
@@ -172,22 +214,45 @@ export default function HomePage() {
           <div className={styles.createModalContent} onClick={(e) => e.stopPropagation()}>
             <h2 className={styles.modalTitle}>그룹 생성</h2>
             
-            {/* 위치 입력 */}
+            {/* 위치 검색 */}
             <div className={styles.inputGroup}>
-              <label className={styles.inputLabel}>📍 현재 위치</label>
-              <input
-                className={styles.modalInput}
-                type="text"
-                placeholder="현재 위치"
-                value={createRoomData.location}
-                onChange={(e) => updateCreateRoomData('location', e.target.value)}
-              />
+              <label className={styles.inputLabel}>📍 위치 검색</label>
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  setSearchKeyword(createRoomData.location);
+                }}
+                style={{ display: 'flex', gap: 8 }}
+              >
+                <input
+                  className={styles.modalInput}
+                  type="text"
+                  placeholder="장소, 주소 검색..."
+                  value={createRoomData.location}
+                  onChange={e => updateCreateRoomData('location', e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="submit"
+                  className={styles.searchButton}
+                >
+                  검색
+                </button>
+              </form>
             </div>
 
             {/* 카카오 지도 */}
-            <KakaoMap onLocationChange={(lat, lng) => {
-              updateCreateRoomData('location', `${lat},${lng}`);
-            }} />
+            <KakaoMap
+              searchKeyword={searchKeyword}
+              onLocationChange={(lat, lng) => {
+                setLocationLat(lat);
+                setLocationLng(lng);
+                setCenterLat(lat);
+                setCenterLng(lng);
+              }}
+              centerLat={centerLat}
+              centerLng={centerLng}
+            />
 
             {/* 후보군 추천 시간 */}
             <div className={styles.inputGroup}>
@@ -206,7 +271,7 @@ export default function HomePage() {
 
             {/* Delivery 옵션 */}
             <div className={styles.optionGroup}>
-              <div className={styles.checkboxGroup}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <input
                   type="checkbox"
                   id="delivery"
@@ -215,27 +280,27 @@ export default function HomePage() {
                   className={styles.checkbox}
                 />
                 <label htmlFor="delivery" className={styles.checkboxLabel}>Delivery</label>
+                {createRoomData.delivery && (
+                  <select
+                    className={styles.timeSelect}
+                    value={createRoomData.deliveryTime}
+                    onChange={(e) => updateCreateRoomData('deliveryTime', e.target.value)}
+                  >
+                    <option value="" disabled>최대 배달 소요 시간</option>
+                    <option value="10">10분</option>
+                    <option value="20">20분</option>
+                    <option value="30">30분</option>
+                    <option value="40">40분</option>
+                    <option value="50">50분</option>
+                    <option value="60">60분</option>
+                  </select>
+                )}
               </div>
-              {createRoomData.delivery && (
-                <select
-                  className={styles.timeSelect}
-                  value={createRoomData.deliveryTime}
-                  onChange={(e) => updateCreateRoomData('deliveryTime', e.target.value)}
-                >
-                  <option value="10">10분</option>
-                  <option value="20">20분</option>
-                  <option value="30">30분</option>
-                  <option value="40">40분</option>
-                  <option value="50">50분</option>
-                  <option value="60">60분</option>
-                  <option value="0">무관</option>
-                </select>
-              )}
             </div>
 
             {/* Visit 옵션 */}
             <div className={styles.optionGroup}>
-              <div className={styles.checkboxGroup}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <input
                   type="checkbox"
                   id="visit"
@@ -244,20 +309,21 @@ export default function HomePage() {
                   className={styles.checkbox}
                 />
                 <label htmlFor="visit" className={styles.checkboxLabel}>Visit</label>
+                {createRoomData.visit && (
+                  <select
+                    className={styles.timeSelect}
+                    value={createRoomData.visitTime}
+                    onChange={(e) => updateCreateRoomData('visitTime', e.target.value)}
+                  >
+                    <option value="" disabled>최대 도보 소요 시간</option>
+                    <option value="5">5분</option>
+                    <option value="10">10분</option>
+                    <option value="20">20분</option>
+                    <option value="30">30분</option>
+                    <option value="40">40분</option>
+                  </select>
+                )}
               </div>
-              {createRoomData.visit && (
-                <select
-                  className={styles.timeSelect}
-                  value={createRoomData.visitTime}
-                  onChange={(e) => updateCreateRoomData('visitTime', e.target.value)}
-                >
-                  <option value="5">5분</option>
-                  <option value="10">10분</option>
-                  <option value="20">20분</option>
-                  <option value="30">30분</option>
-                  <option value="40">40분</option>
-                </select>
-              )}
             </div>
 
             {/* 버튼들 */}
