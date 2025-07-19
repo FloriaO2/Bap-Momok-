@@ -26,14 +26,16 @@ def get_group(group_id: str) -> Optional[GroupData]:
         return None
 
 def update_group(group_id: str, group_update: GroupUpdate) -> Optional[GroupData]:
-    """Firebase에서 기존 그룹 데이터를 업데이트합니다."""
+    print(f"[update_group] 진입: group_id={group_id}")
     try:
         db = get_database()
-        # 업데이트할 데이터를 Firebase에 저장
-        db.child('groups').child(group_id).update(group_update.data.dict())
+        data_dict = group_update.data.dict()
+        print(f"[update_group] set 직전: group_id={group_id}, 저장할 데이터=", data_dict)
+        db.child('groups').child(group_id).set(data_dict)
+        print(f"[update_group] set 직후: group_id={group_id}")
         return group_update.data
     except Exception as e:
-        print(f"Firebase 그룹 업데이트 중 오류: {str(e)}")
+        print(f"[update_group] Firebase 그룹 업데이트 중 오류: {str(e)}")
         return None
 
 def delete_group(group_id: str) -> bool:

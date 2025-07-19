@@ -7,7 +7,7 @@ from database import (
     get_groups_data, create_groups_data, update_groups_data
 )
 from firebase_config import initialize_firebase
-from typing import Dict
+from typing import Dict, Optional
 import json
 import random
 import string
@@ -35,6 +35,27 @@ def get_next_candidate_id(group):
     nums = [int(k.split('_')[-1]) for k in existing if k.startswith('candidate_') and k.split('_')[-1].isdigit()]
     next_num = max(nums) + 1 if nums else 1
     return f"candidate_{next_num}"
+
+def update_candidate_vote_counts(group):
+    # 후보별 집계 초기화
+    for candidate in group.candidates.values():
+        candidate.good = 0
+        candidate.bad = 0
+        candidate.never = 0
+        candidate.soso = 0
+    # votes 순회하며 집계
+    for user_vote in group.votes.values():
+        for candidate_id, vote_value in user_vote.items():
+            candidate = group.candidates.get(candidate_id)
+            if candidate:
+                if vote_value == "good":
+                    candidate.good += 1
+                elif vote_value == "bad":
+                    candidate.bad += 1
+                elif vote_value == "never":
+                    candidate.never += 1
+                elif vote_value == "soso":
+                    candidate.soso += 1
 
 @app.get("/")
 def read_root():
@@ -106,7 +127,6 @@ def add_candidate(group_id: str, candidate: Candidate):
 def add_kakao_candidate(
     group_id: str,
     added_by: str = Body(...),
-    rank: int = Body(...),
     kakao_data: dict = Body(...)
 ):
     group = get_group(group_id)
@@ -121,7 +141,6 @@ def add_kakao_candidate(
     candidate = Candidate(
         added_by=added_by,
         name=kakao_data.get("place_name", ""),
-        rank=rank,
         type="kakao",
         detail=detail
     )
@@ -133,7 +152,6 @@ def add_kakao_candidate(
 def add_yogiyo_candidate(
     group_id: str,
     added_by: str = Body(...),
-    rank: int = Body(...),
     yogiyo_data: dict = Body(...)
 ):
     group = get_group(group_id)
@@ -142,13 +160,12 @@ def add_yogiyo_candidate(
     candidate_id = get_next_candidate_id(group)
     detail = {
         "category": yogiyo_data.get("categories", []),
-        "delivery_time": group.delivery_time,
+        "delivery_time": yogiyo_data.get("estimated_delivery_time"),
         "yogiyo_id": yogiyo_data.get("id")
     }
     candidate = Candidate(
         added_by=added_by,
         name=yogiyo_data.get("name", ""),
-        rank=rank,
         type="yogiyo",
         detail=detail
     )
@@ -183,14 +200,23 @@ def add_custom_candidate(
     return {"message": "커스텀 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
 @app.post("/groups/{group_id}/votes/{user_id}")
-def add_or_update_vote(group_id: str, user_id: str, vote: Vote):
+def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
+    print(f"[add_or_update_vote] group_id={group_id}, user_id={user_id}, vote={vote}")
     group = get_group(group_id)
     if group is None:
+        print(f"[add_or_update_vote] 그룹을 찾을 수 없습니다: {group_id}")
         raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
     prev_vote = group.votes.get(user_id, {})
-    new_vote = vote.root
-    prev_vote.update(new_vote)
+    prev_vote.update(vote)
     group.votes[user_id] = prev_vote
+    print(f"[add_or_update_vote] votes after update: {group.votes}")
+    update_candidate_vote_counts(group)
+    print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
+    # 참가자 voted_count 업데이트
+    participant = group.participants.get(user_id)
+    if participant:
+        participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
+        print(f"[add_or_update_vote] participant {user_id} voted_count: {participant.voted_count}")
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
 

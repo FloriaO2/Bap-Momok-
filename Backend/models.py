@@ -30,6 +30,7 @@ class Participant(BaseModel):
     nickname: str
     suggest_complete: bool
     vote_complete: bool
+    voted_count: Optional[int] = 0
 
 class ParticipantJoin(BaseModel):
     nickname: str
@@ -43,12 +44,12 @@ class GroupData(BaseModel):
     delivery: bool
     delivery_time: Optional[int] = None
     offline: bool
+    radius: Optional[int] = None
     participants: Optional[Dict[str, Participant]] = Field(
         default=None, description="참가자 목록. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
-    radius: Optional[int] = None
     start_votingtime: str
     state: str = Field(default="suggestion", description="그룹 상태. 입력하지 않으면 suggestion으로 자동 처리됩니다.")
-    votes: Optional[Dict[str, Vote]] = Field(
+    votes: Optional[Dict[str, dict]] = Field(
         default=None, description="투표 정보. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
     x: float
     y: float
