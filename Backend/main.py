@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from models import GroupCreate, GroupUpdate, GroupData, GroupsData
+from models import GroupCreate, GroupUpdate, GroupData, GroupsData, Candidate, Vote, ParticipantJoin, Participant
 from database import (
     create_group, get_group, update_group, delete_group, get_all_groups,
     get_groups_data, create_groups_data, update_groups_data
@@ -9,6 +9,8 @@ from database import (
 from firebase_config import initialize_firebase
 from typing import Dict
 import json
+import random
+import string
 
 app = FastAPI(title="Babmomok API", description="밥모임 API 서버")
 
@@ -23,6 +25,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def generate_random_id(length=20):
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choices(chars, k=length))
 
 @app.get("/")
 def read_root():
@@ -46,10 +52,10 @@ def get_group_by_id(group_id: str):
 def create_new_group(group_create: GroupCreate):
     """새로운 그룹 데이터를 생성합니다."""
     try:
-        created_group = create_group(group_create)
+        group_id, created_group = create_group(group_create)
         return {
             "message": "그룹이 성공적으로 생성되었습니다",
-            "group_id": group_create.group_id,
+            "group_id": group_id,
             "data": created_group
         }
     except Exception as e:
@@ -138,6 +144,43 @@ async def upload_json_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="올바른 JSON 형식이 아닙니다")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"파일 업로드 중 오류가 발생했습니다: {str(e)}")
+
+@app.post("/groups/{group_id}/candidates")
+def add_candidate(group_id: str, candidate_id: str, candidate: Candidate):
+    """특정 그룹에 후보(음식점)를 추가합니다."""
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    # 후보 추가
+    group.candidates[candidate_id] = candidate
+    update_group(group_id, GroupUpdate(data=group))
+    return {"message": "후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+
+@app.post("/groups/{group_id}/votes/{user_id}")
+def add_or_update_vote(group_id: str, user_id: str, vote: Vote):
+    """특정 그룹에 특정 유저의 투표 내역을 추가/수정합니다."""
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    # 투표 내역 추가/수정
+    group.votes[user_id] = vote
+    update_group(group_id, GroupUpdate(data=group))
+    return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
+
+@app.post("/groups/{group_id}/participants")
+def join_group(group_id: str, join: ParticipantJoin):
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    participant_id = generate_random_id()
+    participant = Participant(
+        nickname=join.nickname,
+        suggest_complete=False,
+        vote_complete=False
+    )
+    group.participants[participant_id] = participant
+    update_group(group_id, GroupUpdate(data=group))
+    return {"message": "참가자가 성공적으로 추가되었습니다", "participant_id": participant_id, "data": group}
 
 @app.get("/health")
 def health_check():
