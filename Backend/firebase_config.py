@@ -14,7 +14,7 @@ def initialize_firebase():
         # Firebase 초기화
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://babmomok-default-rtdb.firebaseio.com'  # 실제 데이터베이스 URL로 변경 필요
+            'databaseURL': 'https://bap-momok-default-rtdb.firebaseio.com'  # 실제 프로젝트 ID 기반 URL
         })
         
         print("Firebase가 성공적으로 초기화되었습니다.")

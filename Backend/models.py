@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Dict, List, Optional, Union
 from datetime import datetime
 
@@ -31,29 +31,51 @@ class Participant(BaseModel):
     suggest_complete: bool
     vote_complete: bool
 
+class ParticipantJoin(BaseModel):
+    nickname: str
+
 class Vote(BaseModel):
     candidate_1: Optional[str] = None
     candidate_2: Optional[str] = None
     candidate_3: Optional[str] = None
 
 class GroupData(BaseModel):
-    candidates: Dict[str, Candidate]
+    candidates: Optional[Dict[str, Candidate]] = Field(
+        default=None, description="후보 목록. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
     delivery: bool
-    delivery_time: str
+    delivery_time: Optional[str] = None
     offline: bool
-    participants: Dict[str, Participant]
-    radius: int
+    participants: Optional[Dict[str, Participant]] = Field(
+        default=None, description="참가자 목록. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
+    radius: Optional[int] = None
     start_votingtime: str
-    state: str
-    votes: Dict[str, Vote]
+    state: str = Field(default="suggestion", description="그룹 상태. 입력하지 않으면 suggestion으로 자동 처리됩니다.")
+    votes: Optional[Dict[str, Vote]] = Field(
+        default=None, description="투표 정보. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
     x: float
     y: float
+
+    @model_validator(mode="after")
+    def fill_defaults(self):
+        if self.candidates is None:
+            self.candidates = {}
+        if self.participants is None:
+            self.participants = {}
+        if self.votes is None:
+            self.votes = {}
+        errors = []
+        if self.delivery and not self.delivery_time:
+            errors.append('delivery가 true일 때 delivery_time은 필수입니다.')
+        if self.offline and self.radius is None:
+            errors.append('offline이 true일 때 radius는 필수입니다.')
+        if errors:
+            raise ValueError(' / '.join(errors))
+        return self
 
 class GroupsData(BaseModel):
     groups: Dict[str, GroupData]
 
 class GroupCreate(BaseModel):
-    group_id: str
     data: GroupData
 
 class GroupUpdate(BaseModel):

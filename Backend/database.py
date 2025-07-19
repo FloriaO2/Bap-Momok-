@@ -3,13 +3,13 @@ from models import GroupData, GroupCreate, GroupUpdate, GroupsData
 from firebase_config import get_database
 import json
 
-def create_group(group_create: GroupCreate) -> GroupData:
-    """새로운 그룹 데이터를 Firebase에 생성합니다."""
+def create_group(group_create: GroupCreate) -> (str, GroupData):
+    """새로운 그룹 데이터를 Firebase에 생성하고, 자동 생성된 group_id를 반환합니다."""
     try:
         db = get_database()
-        # Firebase에 데이터 저장
-        db.child('groups').child(group_create.group_id).set(group_create.data.dict())
-        return group_create.data
+        ref = db.child('groups').push(group_create.data.dict())
+        group_id = ref.key  # 자동 생성된 20글자 난수
+        return group_id, group_create.data
     except Exception as e:
         raise Exception(f"Firebase 그룹 생성 중 오류: {str(e)}")
 
