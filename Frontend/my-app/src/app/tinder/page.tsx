@@ -73,16 +73,16 @@ export default function TinderPage() {
   const onSwipe = (direction: string, candidateId: string) => {
     let vote = '';
     switch (direction) {
-      case 'up':
+      case 'right':
         vote = 'good';
         break;
-      case 'right':
+      case 'left':
+        vote = 'bad';
+        break;
+      case 'up':
         vote = 'soso';
         break;
       case 'down':
-        vote = 'bad';
-        break;
-      case 'left':
         vote = 'never';
         break;
     }
@@ -239,7 +239,7 @@ export default function TinderPage() {
           <div className={styles.directionContainer}>
             <div className={styles.directionRow}>
               <div className={styles.directionItem}>
-                <span className={styles.directionText}>⬆️ 좋아요</span>
+                <span className={styles.directionText}>⬆️ 쏘쏘</span>
               </div>
             </div>
             <div className={styles.directionRow}>
@@ -247,7 +247,7 @@ export default function TinderPage() {
                 <span className={styles.directionText}>⬅️ 싫어요</span>
               </div>
               <div className={styles.directionItem}>
-                <span className={styles.directionText}>괜찮아요 ➡️</span>
+                <span className={styles.directionText}>좋아요 ➡️</span>
               </div>
             </div>
             <div className={styles.directionRow}>
