@@ -21,6 +21,11 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
   const [groupData, setGroupData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'direct' | 'delivery'>('direct');
   const [timeLeft, setTimeLeft] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  };
 
   // 그룹 데이터에서 선택된 옵션 확인
   const hasDelivery = groupData?.delivery;
@@ -136,15 +141,53 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
       });
 
       if (response.ok) {
-        alert(`${restaurant.name}이(가) 후보에 추가되었습니다!`);
+        showToast(`${restaurant.name}이(가) 후보에 추가되었습니다!`);
       } else {
-        alert('후보 추가에 실패했습니다.');
+        showToast('후보 추가에 실패했습니다.');
       }
     } catch (error) {
       console.error('후보 추가 오류:', error);
-      alert('후보 추가 중 오류가 발생했습니다.');
+      showToast('후보 추가 중 오류가 발생했습니다.');
     }
   };
+
+  // 요기요 후보 추가 함수
+  const addYogiyoCandidate = async (restaurant: any) => {
+    try {
+      const response = await fetch(`http://localhost:8000/groups/${groupId}/candidates/yogiyo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          added_by: 'web_user',
+          yogiyo_data: restaurant
+        }),
+      });
+
+      if (response.ok) {
+        showToast(`${restaurant.name}이(가) 후보에 추가되었습니다!`);
+        // 후보 등록 후 groupData 갱신
+        const res = await fetch(`http://localhost:8000/groups/${groupId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setGroupData(data);
+        }
+      } else {
+        showToast('후보 추가에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('요기요 후보 추가 오류:', error);
+      showToast('후보 추가 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 이미 등록된 요기요 후보 id 목록 추출
+  const registeredYogiyoIds = groupData?.candidates
+    ? Object.values(groupData.candidates)
+        .filter((c: any) => c.type === 'yogiyo' && c.detail && c.detail.yogiyo_id)
+        .map((c: any) => c.detail.yogiyo_id)
+    : [];
 
   if (!groupData) {
     return (
@@ -176,6 +219,23 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
       padding: "20px",
       fontFamily: "Arial, sans-serif"
     }}>
+      {toast && (
+        <div style={{
+          position: "fixed",
+          bottom: "40px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#333",
+          color: "#fff",
+          padding: "16px 32px",
+          borderRadius: "24px",
+          fontSize: "16px",
+          zIndex: 9999,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
+        }}>
+          {toast}
+        </div>
+      )}
       <div style={{ 
         maxWidth: "600px", 
         margin: "0 auto", 
@@ -298,7 +358,8 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
           <DeliveryTab 
             groupData={groupData}
             groupId={groupId}
-            onAddCandidate={addCandidate}
+            onAddCandidate={addYogiyoCandidate}
+            registeredCandidateIds={registeredYogiyoIds}
           />
         )}
 

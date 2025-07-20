@@ -285,8 +285,8 @@ export default function LiveResultsPage({ params }: { params: Promise<{ group_id
                 textAlign: "right"
               }}>
                 <div>👍 {candidate.good}</div>
-                <div>😐 {candidate.soso}</div>
-                <div>👎 {candidate.bad}</div>
+                <div>👌 {candidate.soso}</div>
+                {/*<div>👎 {candidate.bad}</div>*/}
               </div>
             </div>
           ))}

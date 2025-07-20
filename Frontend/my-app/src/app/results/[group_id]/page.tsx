@@ -128,9 +128,7 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
                       gap: "15px"
                     }}>
                       <span>👍 {candidate.good}</span>
-                      <span>😐 {candidate.soso}</span>
-                      <span>👎 {candidate.bad}</span>
-                      <span>❌ {candidate.never}</span>
+                      <span>👌 {candidate.soso}</span>
                     </div>
                   </div>
                   <div style={{ 
@@ -196,24 +194,10 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
                       display: "flex",
                       gap: "10px"
                     }}>
-                      <span>👍 {candidate.good}</span>
-                      <span>😐 {candidate.soso}</span>
-                      <span>👎 {candidate.bad}</span>
-                      <span>❌ {candidate.never}</span>
+                      {/* 투표 개수 숨김 */}
                     </div>
                   </div>
-                  {candidate.never > 0 && (
-                    <div style={{ 
-                      background: "#dc3545", 
-                      color: "#fff", 
-                      padding: "4px 8px", 
-                      borderRadius: "12px", 
-                      fontSize: "12px",
-                      fontWeight: "bold"
-                    }}>
-                      NEVER
-                    </div>
-                  )}
+                  {/* NEVER 태그 제거 */}
                 </div>
               ))
             ) : (

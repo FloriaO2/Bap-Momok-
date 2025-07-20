@@ -1,143 +1,189 @@
 "use client";
-import React, { useState, useEffect } from "react";
-
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  rating: number;
-  image: string;
-  category: string;
-}
+import React, { useState, useEffect, useRef } from "react";
 
 interface DeliveryTabProps {
   groupData: any;
   groupId: string;
-  onAddCandidate: (restaurant: Restaurant) => void;
+  onAddCandidate?: (restaurant: any) => void;
+  registeredCandidateIds?: number[];
 }
 
-export default function DeliveryTab({ groupData, groupId, onAddCandidate }: DeliveryTabProps) {
+interface YogiyoRestaurant {
+  id: number;
+  name: string;
+  categories: string[];
+  review_avg: number;
+  review_count: number;
+  thumbnail_url: string;
+  estimated_delivery_time: string;
+  is_open: boolean;
+}
+
+export default function DeliveryTab({ groupData, groupId, onAddCandidate, registeredCandidateIds = [] }: DeliveryTabProps) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [restaurants, setRestaurants] = useState<YogiyoRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   // 카테고리 목록
   const categories = [
     { id: 'all', name: '전체' },
-    { id: 'franchise', name: '프랜차이즈' },
-    { id: 'chicken', name: '치킨' },
-    { id: 'pizza', name: '피자/양식' },
-    { id: 'chinese', name: '중국집' },
-    { id: 'korean', name: '한식' }
+    { id: '프랜차이즈', name: '프랜차이즈' },
+    { id: '치킨', name: '치킨' },
+    { id: '피자양식', name: '피자/양식' },
+    { id: '중식', name: '중국집' },
+    { id: '한식', name: '한식' },
+    { id: '일식돈까스', name: '일식/돈까스' },
+    { id: '족발보쌈', name: '족발/보쌈' },
+    { id: '야식', name: '야식' },
+    { id: '분식', name: '분식' },
+    { id: '카페디저트', name: '카페/디저트' }
   ];
 
-  // 식당 정보 가져오기 (요기요 API)
-  const fetchRestaurants = async () => {
-    setLoading(true);
-    
-    try {
-      // 카테고리를 요기요 API 형식으로 변환
-      const getYogiyoCategory = (category: string) => {
-        const categoryMap: { [key: string]: string } = {
-          'all': '',
-          'franchise': '프랜차이즈',
-          'chicken': '치킨',
-          'pizza': '피자',
-          'chinese': '중식',
-          'korean': '한식'
-        };
-        return categoryMap[category] || '';
-      };
+  const allCategoryIds = [
+    '프랜차이즈', '치킨', '피자양식', '중식', '한식', '일식돈까스', '족발보쌈', '야식', '분식', '카페디저트'
+  ];
 
-      const yogiyoResponse = await fetch(
-        `https://www.yogiyo.co.kr/api/v2/restaurants?items=60&lat=${groupData.x}&lng=${groupData.y}&order=rank&page=0&search=&serving_type=vd&category=${encodeURIComponent(getYogiyoCategory(activeCategory))}`,
-        {
-          headers: {
-            'Authorization': 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTI4Mzc3OTUsImV4cCI6MTc1Mjg0NDk5NSwicGxhdGZvcm0iOiJZR1kiLCJyb2xlIjoidXNlciIsInN1Yl9pZCI6IjkwMjIxNTQyOSIsImJhc2VfdXJsIjoiaHR0cHM6Ly93d3cueW9naXlvLmNvLmtyIn0.nQzYafM-w33dP5Pc8uRQsbk3CQwQmM4zxuHPRYIF2JSnihhl7PwChpcc7KZuM6y9MRgelIjg3OPjSGFpPrwdMi4AzYA5EYph0mLn0rpWi6T_fLTRsRnso3IUc5EGZSNHoC1UXPopBUEMQi7tNLrDbaxRFtcAc-Q5L3GPP0M3438Xick7DZ648JPtk2nAYKNp-uGhLoYG1VFZw3sIl7dgSyoZhzyvD6pmOhNc1GzhXRFtUdTv8WqAr3aKjmjWq6xpzrzmXu7AHkaMifi1N-lm0-Wi25M6XRukWUI4YIgPd7RmyAadRQh7sJm9pQYxPMVnhfdgthxSmTLsSkomn2izqg'
-          }
-        }
-      );
-      
-      if (yogiyoResponse.ok) {
-        const yogiyoData = await yogiyoResponse.json();
-        const restaurantData = yogiyoData.restaurants.map((restaurant: any, index: number) => ({
-          id: `yogiyo_${restaurant.id}`,
-          name: restaurant.name,
-          description: restaurant.menu_summary || '',
-          rating: restaurant.rating || 4.6,
-          image: restaurant.logo_url || getFoodImage(restaurant.name, ''),
-          category: getCategoryFromName(restaurant.name, restaurant.category)
-        }));
-        setRestaurants(restaurantData);
-      }
-    } catch (error) {
-      console.error("식당 정보 가져오기 실패:", error);
-    } finally {
-      setLoading(false);
-    }
+  // 카테고리별 page/done 상태 관리
+  const initialPageMap = Object.fromEntries(allCategoryIds.map(cat => [cat, 0]));
+  const initialDoneMap = Object.fromEntries(allCategoryIds.map(cat => [cat, false]));
+  const [categoryPageMap, setCategoryPageMap] = useState<{ [cat: string]: number }>(initialPageMap);
+  const [categoryDoneMap, setCategoryDoneMap] = useState<{ [cat: string]: boolean }>(initialDoneMap);
+
+  // 페이지별 식당 불러오기 (기존 fetchPage)
+  const fetchPage = async (category: string, pageNum: number) => {
+    const res = await fetch(`/groups/${groupId}/yogiyo-restaurants?category=${encodeURIComponent(category)}&page=${pageNum}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.restaurants || [];
   };
 
-  // 카테고리 변경 시 식당 정보 다시 가져오기
-  useEffect(() => {
-    if (groupData) {
-      fetchRestaurants();
+  // 더보기(다음 페이지) 불러오기
+  const loadMore = async () => {
+    setLoading(true);
+    if (activeCategory === 'all') {
+      // 전체: 아직 done이 아닌 카테고리 중 하나를 골라서 불러오기
+      const nextCat = allCategoryIds.find(cat => !categoryDoneMap[cat]);
+      if (!nextCat) {
+        setHasMore(false);
+        setLoading(false);
+        return;
+      }
+      const pageNum = categoryPageMap[nextCat];
+      const newRestaurants = await fetchPage(nextCat, pageNum);
+      setRestaurants(prev => {
+        const all = [...prev, ...newRestaurants];
+        return Array.from(new Map(all.map(r => [r.id, r])).values());
+      });
+      setCategoryPageMap(prev => ({ ...prev, [nextCat]: pageNum + 1 }));
+      setCategoryDoneMap(prev => ({ ...prev, [nextCat]: newRestaurants.length < 60 }));
+      // 모든 카테고리가 done이면 더보기 숨김
+      const allDone = allCategoryIds.every(cat => (cat === nextCat ? newRestaurants.length < 60 : categoryDoneMap[cat]));
+      setHasMore(!allDone);
+    } else {
+      // 단일 카테고리
+      const pageNum = page;
+      const newRestaurants = await fetchPage(activeCategory, pageNum);
+      setRestaurants(prev => {
+        const all = [...prev, ...newRestaurants];
+        return Array.from(new Map(all.map(r => [r.id, r])).values());
+      });
+      setPage(prev => prev + 1);
+      setHasMore(newRestaurants.length === 60);
     }
+    setLoading(false);
+  };
+
+  // 카테고리 변경/초기화 시 1페이지만 불러오기
+  useEffect(() => {
+    setRestaurants([]);
+    setPage(0);
+    setHasMore(true);
+    setLoading(true);
+    setCategoryPageMap(initialPageMap);
+    setCategoryDoneMap(initialDoneMap);
+    (async () => {
+      if (activeCategory === 'all') {
+        // 전체: 모든 카테고리 1페이지씩 불러오기
+        let allResults: YogiyoRestaurant[] = [];
+        for (const cat of allCategoryIds) {
+          const firstPage = await fetchPage(cat, 0);
+          allResults = allResults.concat(firstPage);
+          setCategoryPageMap(prev => ({ ...prev, [cat]: 1 }));
+          setCategoryDoneMap(prev => ({ ...prev, [cat]: firstPage.length < 60 }));
+        }
+        // id 기준 중복 제거
+        const unique = Array.from(new Map(allResults.map(r => [r.id, r])).values());
+        setRestaurants(unique);
+        setHasMore(true);
+      } else {
+        const firstPage = await fetchPage(activeCategory, 0);
+        setRestaurants(firstPage);
+        setHasMore(firstPage.length === 60);
+      }
+      setLoading(false);
+    })();
+    // eslint-disable-next-line
   }, [activeCategory, groupData]);
 
-  // 카테고리별 필터링
-  const filteredRestaurants = restaurants.filter(restaurant => {
-    const matchesCategory = activeCategory === 'all' || restaurant.category === activeCategory;
-    const matchesSearch = searchTerm === '' || 
-      restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      restaurant.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+  // 검색 필터
+  const filteredRestaurants = restaurants.filter((r: any) => {
+    const matchesSearch = searchTerm === '' || r.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
-  // 음식 이미지 매핑
-  const getFoodImage = (name: string, category: string) => {
-    const imageMap: { [key: string]: string } = {
-      '치킨': 'https://images.unsplash.com/photo-1567620832904-9feaa4f70e0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      '피자': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      '마라탕': 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      '덮밥': 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      '햄버거': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80'
-    };
-    
-    for (const [key, url] of Object.entries(imageMap)) {
-      if (name.includes(key) || category.includes(key)) {
-        return url;
-      }
-    }
-    return imageMap['햄버거']; // 기본값
-  };
+  // id 기준 중복 제거
+  const uniqueRestaurants = Array.from(
+    new Map(filteredRestaurants.map(r => [r.id, r])).values()
+  );
 
-  // 카테고리 분류
-  const getCategoryFromName = (name: string, category: string) => {
-    const lowerName = name.toLowerCase();
-    const lowerCategory = category.toLowerCase();
-    
-    if (lowerName.includes('치킨') || lowerCategory.includes('치킨')) return 'chicken';
-    if (lowerName.includes('피자') || lowerCategory.includes('피자')) return 'pizza';
-    if (lowerName.includes('중국') || lowerName.includes('마라') || lowerCategory.includes('중식')) return 'chinese';
-    if (lowerName.includes('맥도날드') || lowerName.includes('버거킹') || lowerName.includes('롯데리아')) return 'franchise';
-    return 'korean';
+  // 카테고리 탭 드래그 스크롤 구현
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    startX.current = e.pageX - (scrollRef.current?.offsetLeft || 0);
+    scrollLeft.current = scrollRef.current?.scrollLeft || 0;
   };
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    const x = e.pageX - (scrollRef.current?.offsetLeft || 0);
+    const walk = x - startX.current;
+    if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+  const onMouseUp = () => { isDragging.current = false; };
 
   return (
     <div>
       {/* 카테고리 탭 */}
-      <div style={{ 
-        display: "flex", 
-        overflowX: "auto",
-        gap: "20px",
-        paddingBottom: "10px"
-      }}>
+      <div
+        ref={scrollRef}
+        className="category-scroll"
+        style={{
+          display: "flex",
+          gap: "20px",
+          paddingBottom: "10px",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          WebkitOverflowScrolling: "touch"
+        }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseLeave={onMouseUp}
+        onMouseUp={onMouseUp}
+      >
         {categories.map((category) => (
           <button
             key={category.id}
             onClick={() => setActiveCategory(category.id)}
-            style={{ 
+            style={{
               padding: "8px 0",
               background: "none",
               border: "none",
@@ -153,18 +199,14 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate }: Deli
           </button>
         ))}
       </div>
-
       {/* 검색바 */}
-      <div style={{ 
-        marginBottom: "20px",
-        position: "relative"
-      }}>
+      <div style={{ marginBottom: "20px", position: "relative" }}>
         <input
           type="text"
           placeholder="검색어"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ 
+          style={{
             width: "100%",
             padding: "12px 40px 12px 15px",
             border: "1px solid #e0e0e0",
@@ -176,7 +218,7 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate }: Deli
         {searchTerm && (
           <button
             onClick={() => setSearchTerm('')}
-            style={{ 
+            style={{
               position: "absolute",
               right: "15px",
               top: "50%",
@@ -192,121 +234,110 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate }: Deli
           </button>
         )}
       </div>
-
       {/* 식당 목록 */}
-      <div style={{ 
-        height: "calc(100vh - 500px)",
-        minHeight: "200px",
-        maxHeight: "50vh",
-        overflowY: "auto"
-      }}>
-        <h3 style={{ 
-          fontSize: "18px", 
-          fontWeight: "bold", 
-          color: "#333", 
-          marginBottom: "15px"
-        }}>
+      <div style={{ height: "calc(100vh - 500px)", minHeight: "200px", maxHeight: "50vh", overflowY: "auto" }}>
+        <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#333", marginBottom: "15px" }}>
           배달 음식점 목록
         </h3>
-        
-        {loading ? (
+        {loading && restaurants.length === 0 ? (
           <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
             식당 정보를 불러오는 중...
           </div>
-        ) : filteredRestaurants.length === 0 ? (
+        ) : uniqueRestaurants.length === 0 ? (
           <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
             식당이 없습니다
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-            {filteredRestaurants.map((restaurant) => (
-              <div key={restaurant.id} style={{ 
-                display: "flex",
-                alignItems: "center",
-                padding: "15px",
-                background: "#f8f9fa",
-                borderRadius: "12px",
-                gap: "15px"
-              }}>
-                {/* 이미지 */}
-                <div style={{ 
-                  width: "60px", 
-                  height: "60px", 
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  flexShrink: 0
-                }}>
-                  <img 
-                    src={restaurant.image}
-                    alt={restaurant.name}
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
-                      objectFit: "cover"
-                    }}
-                  />
-                </div>
-                
-                {/* 정보 */}
-                <div style={{ flex: 1 }}>
-                  <div style={{ 
-                    fontSize: "16px", 
-                    fontWeight: "bold", 
-                    color: "#333",
-                    marginBottom: "4px"
-                  }}>
-                    {restaurant.name}
-                  </div>
-                  <div style={{ 
-                    fontSize: "14px", 
-                    color: "#666",
-                    marginBottom: "4px"
-                  }}>
-                    {restaurant.description}
-                  </div>
-                  <div style={{ 
-                    fontSize: "14px", 
-                    color: "#666",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px"
-                  }}>
-                    ⭐ {restaurant.rating}
-                  </div>
-                </div>
-                
-                {/* 추가 버튼 */}
-                <button
-                  onClick={() => onAddCandidate(restaurant)}
-                  style={{ 
-                    width: "40px",
-                    height: "40px",
-                    background: "#994d52",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "50%",
-                    fontSize: "20px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = "#8a4449";
-                    e.currentTarget.style.transform = "scale(1.1)";
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = "#994d52";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
+          <>
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              {uniqueRestaurants.map((r) => (
+                <div
+                  key={r.id}
+                  style={{ display: "flex", alignItems: "center", padding: "15px", background: "#f8f9fa", borderRadius: "12px", gap: "15px" }}
                 >
-                  +
+                  {/* 썸네일 */}
+                  <div style={{ width: "60px", height: "60px", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
+                    <img
+                      src={r.thumbnail_url}
+                      alt={r.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                  {/* 정보 */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "16px", fontWeight: "bold", color: "#333", marginBottom: "4px" }}>{r.name}</div>
+                    <div style={{ fontSize: "14px", color: "#666", marginBottom: "4px" }}>{r.categories.join(', ')}</div>
+                    <div style={{ fontSize: "14px", color: "#666", display: "flex", alignItems: "center", gap: "4px" }}>
+                      ⭐ {r.review_avg} ({r.review_count} 리뷰)
+                    </div>
+                  </div>
+                  {/* + 버튼 */}
+                  {typeof onAddCandidate === 'function' && (
+                    <button
+                      onClick={() => onAddCandidate({
+                        id: r.id,
+                        name: r.name,
+                        description: '',
+                        rating: r.review_avg,
+                        image: r.thumbnail_url,
+                        category: r.categories[0] || '',
+                        detail: {
+                          thumbnail_url: r.thumbnail_url
+                        }
+                      })}
+                      disabled={registeredCandidateIds.includes(r.id)}
+                      style={{
+                        width: "40px",
+                        height: "40px",
+                        background: registeredCandidateIds.includes(r.id) ? "#ccc" : "#994d52",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "50%",
+                        fontSize: "20px",
+                        fontWeight: "bold",
+                        cursor: registeredCandidateIds.includes(r.id) ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s"
+                      }}
+                      onMouseOver={e => {
+                        if (!registeredCandidateIds.includes(r.id)) {
+                          e.currentTarget.style.background = "#8a4449";
+                          e.currentTarget.style.transform = "scale(1.1)";
+                        }
+                      }}
+                      onMouseOut={e => {
+                        if (!registeredCandidateIds.includes(r.id)) {
+                          e.currentTarget.style.background = "#994d52";
+                          e.currentTarget.style.transform = "scale(1)";
+                        }
+                      }}
+                    >
+                      {registeredCandidateIds.includes(r.id) ? '✔' : '+'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {hasMore && activeCategory !== 'all' && (
+              <div style={{ textAlign: "center", margin: "20px 0" }}>
+                <button onClick={loadMore} disabled={loading} style={{
+                  background: "#994d52",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "20px",
+                  padding: "10px 30px",
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.7 : 1
+                }}>
+                  {loading ? '로딩 중...' : '더보기'}
                 </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>
