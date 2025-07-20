@@ -127,7 +127,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
         const result = await response.json();
         if (result.participant_id) {
           // 참가자 ID 저장
-          sessionStorage.setItem("participant_id", result.participant_id);
+          sessionStorage.setItem(`participant_id_${groupId}`, result.participant_id);
           setShowNicknameModal(false);
         } else {
           alert("참가 등록 실패");

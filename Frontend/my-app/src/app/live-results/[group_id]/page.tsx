@@ -28,10 +28,11 @@ export default function LiveResultsPage({ params }: { params: Promise<{ group_id
         setGroupData(groupData);
         setResults(resultsData);
         
-        // 투표 진행률 계산 (투표 완료한 사람 수 / 전체 참여자 수)
-        const totalParticipants = Object.keys(groupData.participants || {}).length;
-        const votedParticipants = Object.keys(groupData.votes || {}).length;
-        const progress = totalParticipants > 0 ? (votedParticipants / totalParticipants) * 100 : 0;
+        // 투표 진행률 계산 (vote_complete가 true인 사람 수 / 전체 참여자 수)
+        const participantsObj = groupData.participants || {};
+        const totalParticipants = Object.keys(participantsObj).length;
+        const completedParticipants = Object.values(participantsObj).filter((p: any) => p.vote_complete).length;
+        const progress = totalParticipants > 0 ? (completedParticipants / totalParticipants) * 100 : 0;
         setVotingProgress(progress);
         
       } catch (error) {

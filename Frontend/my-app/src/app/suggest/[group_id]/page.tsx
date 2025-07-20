@@ -3,6 +3,7 @@ import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import DirectTab from '../../components/suggest/DirectTab';
 import DeliveryTab from '../../components/suggest/DeliveryTab';
+import SuggestCompleteWaitScreen from '../../components/suggest/SuggestCompleteWaitScreen';
 
 interface Restaurant {
   id: string;
@@ -26,6 +27,8 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   };
+  const [showSuggestCompleteScreen, setShowSuggestCompleteScreen] = useState(false);
+  const [participantId, setParticipantId] = useState<string | null>(null);
 
   // 그룹 데이터에서 선택된 옵션 확인
   const hasDelivery = groupData?.delivery;
@@ -121,6 +124,20 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
     }
   }, [groupData, groupId, router]);
 
+  useEffect(() => {
+    // 참가자 ID를 sessionStorage에서 groupId별로 읽음
+    if (typeof window !== 'undefined') {
+      setParticipantId(sessionStorage.getItem(`participant_id_${groupId}`));
+    }
+  }, [groupId]);
+
+  // 제안 완료 처리
+  const handleSuggestComplete = async () => {
+    if (!participantId) return;
+    setShowSuggestCompleteScreen(true); // 먼저 대기 화면으로 전환
+    await fetch(`http://localhost:8000/groups/${groupId}/participants/${participantId}/suggest-complete`, { method: 'POST' });
+  };
+
   // 후보 추가 함수
   const addCandidate = async (restaurant: Restaurant) => {
     try {
@@ -209,6 +226,17 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
           <div style={{ color: "#333", fontSize: "18px" }}>그룹 정보를 불러오는 중...</div>
         </div>
       </div>
+    );
+  }
+
+  if (showSuggestCompleteScreen) {
+    return (
+      <SuggestCompleteWaitScreen
+        groupId={groupId}
+        participantId={participantId}
+        router={router}
+        timeLeft={timeLeft}
+      />
     );
   }
 
@@ -370,32 +398,8 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
           gap: "15px"
         }}>
           <button
-            onClick={() => router.push(`/participate/${groupId}`)}
-            style={{ 
-              flex: 1,
-              background: "#6c757d", 
-              color: "#fff", 
-              border: "none",
-              borderRadius: "25px", 
-              padding: "15px 30px", 
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "#5a6268";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "#6c757d";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            참여 화면으로
-          </button>
-          <button
-            onClick={() => router.push(`/tinder?group_id=${groupId}`)}
+            onClick={handleSuggestComplete}
+            disabled={!participantId}
             style={{ 
               flex: 1,
               background: "#994d52",
@@ -405,19 +409,23 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
               padding: "15px 30px", 
               fontSize: "16px",
               fontWeight: "bold",
-              cursor: "pointer",
+              cursor: !participantId ? "not-allowed" : "pointer",
               transition: "all 0.3s ease"
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = "#8a4449";
-              e.currentTarget.style.transform = "translateY(-2px)";
+              if (participantId) {
+                e.currentTarget.style.background = "#8a4449";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.background = "#994d52";
-              e.currentTarget.style.transform = "translateY(0)";
+              if (participantId) {
+                e.currentTarget.style.background = "#994d52";
+                e.currentTarget.style.transform = "translateY(0)";
+              }
             }}
           >
-            투표하러 가기
+            제안 완료
           </button>
         </div>
       </div>

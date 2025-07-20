@@ -247,6 +247,18 @@ def join_group(group_id: str, join: ParticipantJoin):
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "참가자가 성공적으로 추가되었습니다", "participant_id": participant_id, "data": group}
 
+@app.post("/groups/{group_id}/participants/{participant_id}/suggest-complete")
+def set_suggest_complete(group_id: str, participant_id: str):
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    participant = group.participants.get(participant_id)
+    if participant is None:
+        raise HTTPException(status_code=404, detail="참가자를 찾을 수 없습니다")
+    participant.suggest_complete = True
+    update_group(group_id, GroupUpdate(data=group))
+    return {"message": "제안 완료 처리됨", "participant_id": participant_id}
+
 @app.get("/groups/{group_id}/results")
 def get_voting_results(group_id: str):
     """투표 결과와 순위를 조회합니다."""
