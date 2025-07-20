@@ -171,7 +171,13 @@ export default function TinderPage() {
               <div className={styles.completionButtons}>
                 <button 
                   className={styles.completionButton}
-                  onClick={() => router.push(`/live-results/${groupId}`)}
+                  onClick={() => { 
+                    if (groupId) {
+                      window.location.href = `/live-results/${groupId}`;
+                    } else {
+                      alert('groupId가 없습니다!');
+                    }
+                  }}
                   style={{ background: '#28a745' }}
                 >
                   실시간 결과
@@ -295,7 +301,13 @@ export default function TinderPage() {
             gap: '10px'
           }}>
             <button 
-              onClick={() => router.push(`/live-results/${groupId}`)}
+              onClick={() => { 
+                if (groupId) {
+                  window.location.href = `/live-results/${groupId}`;
+                } else {
+                  alert('groupId가 없습니다!');
+                }
+              }}
               style={{
                 background: '#28a745',
                 color: '#fff',
