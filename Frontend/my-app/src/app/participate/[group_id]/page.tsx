@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 // Firebase SDK import
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, off } from "firebase/database";
@@ -15,7 +15,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-export default function ParticipatePage({ params }: { params: { group_id: string } }) {
+export default function ParticipatePage({ params }: { params: Promise<{ group_id: string }> }) {
+  const resolvedParams = use(params);
+  const groupId = resolvedParams.group_id;
+  
   const [showNicknameModal, setShowNicknameModal] = useState(true);
   const [nickname, setNickname] = useState("");
   const [participants, setParticipants] = useState({});
@@ -50,14 +53,14 @@ export default function ParticipatePage({ params }: { params: { group_id: string
           setTimeLeft("투표 종료");
           // 투표 시간이 끝나면 3초 후 결과 화면으로 이동
           setTimeout(() => {
-            window.location.href = `/results/${params.group_id}`;
+            window.location.href = `/results/${groupId}`;
           }, 3000);
         }
       }, 1000);
       
       return () => clearInterval(timer);
     }
-  }, [groupData, params.group_id]);
+  }, [groupData, groupId]);
 
   // 게이지 퍼센트 계산
   const getProgressPercentage = () => {
@@ -92,7 +95,7 @@ export default function ParticipatePage({ params }: { params: { group_id: string
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/groups/${params.group_id}`);
+        const response = await fetch(`http://localhost:8000/groups/${groupId}`);
         if (response.ok) {
           const data = await response.json();
           setGroupData(data);
@@ -106,14 +109,14 @@ export default function ParticipatePage({ params }: { params: { group_id: string
       }
     };
     fetchGroupData();
-  }, [params.group_id]);
+  }, [groupId]);
 
   const handleNicknameSubmit = async () => {
     if (nickname.trim()) {
       localStorage.setItem("nickname", nickname.trim());
       try {
         const response = await fetch(
-          `http://localhost:8000/groups/${params.group_id}/participants`,
+          `http://localhost:8000/groups/${groupId}/participants`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -134,12 +137,12 @@ export default function ParticipatePage({ params }: { params: { group_id: string
   };
 
   useEffect(() => {
-    const participantsRef = ref(db, `groups/${params.group_id}/participants`);
+    const participantsRef = ref(db, `groups/${groupId}/participants`);
     const unsubscribe = onValue(participantsRef, (snapshot) => {
       setParticipants(snapshot.val() || {});
     });
     return () => off(participantsRef, "value", unsubscribe);
-  }, [params.group_id]);
+  }, [groupId]);
 
   // QR코드 생성 (간단한 URL 기반)
   const generateQRCode = (url: string) => {
@@ -148,7 +151,7 @@ export default function ParticipatePage({ params }: { params: { group_id: string
 
   // 링크 복사
   const copyLink = async () => {
-    const inviteUrl = `http://localhost:3000/participate/${params.group_id}`;
+    const inviteUrl = `http://localhost:3000/participate/${groupId}`;
     try {
       await navigator.clipboard.writeText(inviteUrl);
       alert("링크가 복사되었습니다!");
@@ -159,7 +162,7 @@ export default function ParticipatePage({ params }: { params: { group_id: string
 
   // 공유하기
   const shareLink = async () => {
-    const inviteUrl = `http://localhost:3000/participate/${params.group_id}`;
+    const inviteUrl = `http://localhost:3000/participate/${groupId}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -378,7 +381,7 @@ export default function ParticipatePage({ params }: { params: { group_id: string
               marginBottom: "20px" 
             }}>
               <img 
-                src={generateQRCode(`http://localhost:3000/participate/${params.group_id}`)}
+                src={generateQRCode(`http://localhost:3000/participate/${groupId}`)}
                 alt="QR Code"
                 style={{ 
                   width: "200px", 
@@ -406,7 +409,7 @@ export default function ParticipatePage({ params }: { params: { group_id: string
                 flex: 1,
                 textAlign: "left"
               }}>
-                http://localhost:3000/participate/{params.group_id}
+                http://localhost:3000/participate/{groupId}
               </span>
               <div style={{ display: "flex", gap: "10px", marginLeft: "10px" }}>
                 <button 
@@ -483,7 +486,7 @@ export default function ParticipatePage({ params }: { params: { group_id: string
 
           {/* 제안하러 가기 버튼 */}
           <button
-            onClick={() => window.location.href = `/suggest/${params.group_id}`}
+            onClick={() => window.location.href = `/suggest/${groupId}`}
             style={{ 
               background: "#dc3545", 
               color: "#fff", 

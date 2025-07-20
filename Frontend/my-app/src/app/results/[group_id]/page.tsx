@@ -1,14 +1,19 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
 
-export default function ResultsPage({ params }: { params: { group_id: string } }) {
+export default function ResultsPage({ params }: { params: Promise<{ group_id: string }> }) {
+  const resolvedParams = use(params);
+  const groupId = resolvedParams.group_id;
+  
+  const router = useRouter();
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/groups/${params.group_id}/results`);
+        const response = await fetch(`http://localhost:8000/groups/${groupId}/results`);
         const data = await response.json();
         setResults(data);
       } catch (error) {
@@ -18,7 +23,7 @@ export default function ResultsPage({ params }: { params: { group_id: string } }
       }
     };
     fetchResults();
-  }, [params.group_id]);
+  }, [groupId]);
 
   if (loading) {
     return (
@@ -227,7 +232,7 @@ export default function ResultsPage({ params }: { params: { group_id: string } }
         {/* 버튼 그룹 */}
         <div style={{ marginTop: "30px", textAlign: "center", display: "flex", gap: "15px", justifyContent: "center" }}>
           <button
-            onClick={() => window.history.back()}
+            onClick={() => router.back()}
             style={{ 
               background: "#6c757d", 
               color: "#fff", 
@@ -251,7 +256,7 @@ export default function ResultsPage({ params }: { params: { group_id: string } }
             뒤로가기
           </button>
           <button
-            onClick={() => window.location.href = '/?action=create'}
+            onClick={() => router.push('/?action=create')}
             style={{ 
               background: "#dc3545", 
               color: "#fff", 

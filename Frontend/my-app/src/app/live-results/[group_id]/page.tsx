@@ -1,21 +1,25 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 
-export default function LiveResultsPage({ params }: { params: { group_id: string } }) {
+export default function LiveResultsPage({ params }: { params: Promise<{ group_id: string }> }) {
+  const resolvedParams = use(params);
+  const groupId = resolvedParams.group_id;
+  
+  const router = useRouter();
   const [groupData, setGroupData] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [votingProgress, setVotingProgress] = useState(0);
-  const router = useRouter();
+  const [timeLeft, setTimeLeft] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // 그룹 데이터와 결과 가져오기
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [groupResponse, resultsResponse] = await Promise.all([
-          fetch(`http://localhost:8000/groups/${params.group_id}`),
-          fetch(`http://localhost:8000/groups/${params.group_id}/results`)
+          fetch(`http://localhost:8000/groups/${groupId}`),
+          fetch(`http://localhost:8000/groups/${groupId}/results`)
         ]);
         
         const groupData = await groupResponse.json();
@@ -43,17 +47,17 @@ export default function LiveResultsPage({ params }: { params: { group_id: string
     const interval = setInterval(fetchData, 3000); // 3초마다 업데이트
     
     return () => clearInterval(interval);
-  }, [params.group_id]);
+  }, [groupId]);
 
   // 투표 완료율이 75% 이상이면 실시간 결과 페이지 닫기
   useEffect(() => {
     if (votingProgress >= 75) {
       // 3초 후 결과 페이지로 이동
       setTimeout(() => {
-        router.push(`/results/${params.group_id}`);
+        router.push(`/results/${groupId}`);
       }, 3000);
     }
-  }, [votingProgress, params.group_id, router]);
+  }, [votingProgress, groupId, router]);
 
   // 실제 후보 데이터 또는 임시 데이터 사용
   const getCandidates = () => {

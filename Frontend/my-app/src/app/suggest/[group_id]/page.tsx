@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import KakaoMap from '../../components/KakaoMap';
 
@@ -12,7 +12,10 @@ interface Restaurant {
   category: string;
 }
 
-export default function SuggestPage({ params }: { params: { group_id: string } }) {
+export default function SuggestPage({ params }: { params: Promise<{ group_id: string }> }) {
+  const resolvedParams = use(params);
+  const groupId = resolvedParams.group_id;
+  
   const router = useRouter();
   const [groupData, setGroupData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'direct' | 'delivery'>('direct');
@@ -84,7 +87,7 @@ export default function SuggestPage({ params }: { params: { group_id: string } }
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/groups/${params.group_id}`);
+        const response = await fetch(`http://localhost:8000/groups/${groupId}`);
         if (response.ok) {
           const data = await response.json();
           setGroupData(data);
@@ -96,7 +99,7 @@ export default function SuggestPage({ params }: { params: { group_id: string } }
       }
     };
     fetchGroupData();
-  }, [params.group_id]);
+  }, [groupId]);
 
   // 투표 시간 계산
   useEffect(() => {
@@ -124,14 +127,14 @@ export default function SuggestPage({ params }: { params: { group_id: string } }
           setTimeLeft("투표 종료");
           // 투표 시간이 끝나면 3초 후 결과 화면으로 이동
           setTimeout(() => {
-            router.push(`/results/${params.group_id}`);
+            router.push(`/results/${groupId}`);
           }, 3000);
         }
       }, 1000);
       
       return () => clearInterval(timer);
     }
-  }, [groupData, params.group_id, router]);
+  }, [groupData, groupId, router]);
 
   // 식당 정보 가져오기
   const fetchRestaurants = async (groupData: any) => {
@@ -308,7 +311,7 @@ export default function SuggestPage({ params }: { params: { group_id: string } }
   // 후보 추가
   const addCandidate = async (restaurant: Restaurant) => {
     try {
-      const response = await fetch(`http://localhost:8000/groups/${params.group_id}/candidates`, {
+      const response = await fetch(`http://localhost:8000/groups/${groupId}/candidates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -678,7 +681,7 @@ export default function SuggestPage({ params }: { params: { group_id: string } }
           gap: "15px"
         }}>
           <button
-            onClick={() => router.push(`/participate/${params.group_id}`)}
+            onClick={() => router.push(`/participate/${groupId}`)}
             style={{ 
               flex: 1,
               background: "#6c757d", 
@@ -703,7 +706,7 @@ export default function SuggestPage({ params }: { params: { group_id: string } }
             참여 화면으로
           </button>
           <button
-            onClick={() => router.push(`/tinder?group_id=${params.group_id}`)}
+            onClick={() => router.push(`/tinder?group_id=${groupId}`)}
             style={{ 
               flex: 1,
               background: "#994d52", 
