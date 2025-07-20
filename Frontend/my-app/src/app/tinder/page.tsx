@@ -1,54 +1,102 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import TinderCard from 'react-tinder-card';
 import styles from './tinder.module.css';
 
 export default function TinderPage() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [candidates, setCandidates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [groupData, setGroupData] = useState<any>(null);
+  const [userVotes, setUserVotes] = useState<{[key: string]: string}>({});
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const groupId = searchParams.get('group_id');
 
-  // 사람 이름 카드 데이터
-  const peopleCards = [
-    { id: 1, name: '김철수', emoji: '👨' },
-    { id: 2, name: '이영희', emoji: '👩' },
-    { id: 3, name: '박민수', emoji: '👨‍🦱' },
-    { id: 4, name: '최지영', emoji: '👩‍🦰' },
-    { id: 5, name: '정현우', emoji: '👨‍💼' },
-    { id: 6, name: '한소영', emoji: '👩‍💼' },
-    { id: 7, name: '윤태호', emoji: '👨‍🎓' },
-    { id: 8, name: '송미라', emoji: '👩‍🎓' },
-  ];
+  // 그룹 데이터와 후보들 가져오기
+  useEffect(() => {
+    const fetchGroupData = async () => {
+      if (!groupId) return;
+      
+      try {
+        const response = await fetch(`http://localhost:8000/groups/${groupId}`);
+        const data = await response.json();
+        setGroupData(data);
+        
+        // 후보들을 배열로 변환
+        const candidatesArray = Object.entries(data.candidates || {}).map(([id, candidate]: [string, any]) => ({
+          id,
+          ...candidate
+        }));
+        setCandidates(candidatesArray);
+      } catch (error) {
+        console.error("그룹 데이터 가져오기 실패:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchGroupData();
+  }, [groupId, router]);
+
+  // 투표 제출
+  const submitVote = async (candidateId: string, vote: string) => {
+    if (!groupId) return;
+    
+    const participantId = localStorage.getItem('participant_id');
+    if (!participantId) {
+      alert('참가자 정보가 없습니다. 다시 참여해주세요.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/groups/${groupId}/votes/${participantId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [candidateId]: vote })
+      });
+      
+      if (response.ok) {
+        setUserVotes(prev => ({ ...prev, [candidateId]: vote }));
+      } else {
+        alert('투표 제출에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('투표 제출 실패:', error);
+      alert('투표 제출에 실패했습니다.');
+    }
+  };
 
   // 카드 스와이프 처리
-  const onSwipe = (direction: string, cardId: number) => {
-    const card = peopleCards.find(c => c.id === cardId);
-    
-    let directionText = '';
+  const onSwipe = (direction: string, candidateId: string) => {
+    let vote = '';
     switch (direction) {
       case 'up':
-        directionText = '⬆️ 위쪽';
-        break;
-      case 'down':
-        directionText = '⬇️ 아래쪽';
-        break;
-      case 'left':
-        directionText = '⬅️ 왼쪽';
+        vote = 'good';
         break;
       case 'right':
-        directionText = '➡️ 오른쪽';
+        vote = 'soso';
+        break;
+      case 'down':
+        vote = 'bad';
+        break;
+      case 'left':
+        vote = 'never';
         break;
     }
     
-    console.log(`${directionText}으로 스와이프: ${card?.name}`);
+    if (vote) {
+      submitVote(candidateId, vote);
+    }
     
     setCurrentCardIndex(prev => prev + 1);
   };
 
   // 카드가 화면을 벗어났을 때
-  const onCardLeftScreen = (cardId: number) => {
-    console.log(`${cardId} 카드가 화면을 벗어났습니다.`);
+  const onCardLeftScreen = (candidateId: string) => {
+    console.log(`${candidateId} 카드가 화면을 벗어났습니다.`);
   };
 
   // 홈으로 돌아가기
@@ -56,8 +104,36 @@ export default function TinderPage() {
     router.push('/');
   };
 
-  // 카드가 끝났을 때
-  if (currentCardIndex >= peopleCards.length) {
+  // 결과 보기
+  const viewResults = () => {
+    if (groupId) {
+      router.push(`/results/${groupId}`);
+    }
+  };
+
+  // 참여 화면으로 돌아가기
+  const goToParticipate = () => {
+    if (groupId) {
+      router.push(`/participate/${groupId}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.backgroundImage}>
+          <div className={styles.overlay}>
+            <div className={styles.completionContainer}>
+              <h2 className={styles.completionTitle}>로딩 중...</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 카드가 끝났을 때 또는 후보가 아예 없을 때
+  if (currentCardIndex >= candidates.length) {
     return (
       <div className={styles.container}>
         <div 
@@ -68,15 +144,24 @@ export default function TinderPage() {
         >
           <div className={styles.overlay}>
             <div className={styles.completionContainer}>
-              <h2 className={styles.completionTitle}>모든 사람을 확인했습니다!</h2>
-              <p className={styles.completionText}>결과를 확인하시겠습니까?</p>
+              <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
+              <p className={styles.completionText}>투표가 완료되었습니다.</p>
               <div className={styles.completionButtons}>
                 <button 
                   className={styles.completionButton}
-                  onClick={() => setCurrentCardIndex(0)}
+                  onClick={() => router.push(`/live-results/${groupId}`)}
+                  style={{ background: '#28a745' }}
                 >
-                  다시하기
+                  실시간 결과
                 </button>
+                <button 
+                  className={styles.completionButton}
+                  onClick={viewResults}
+                  style={{ background: '#dc3545' }}
+                >
+                  최종 결과
+                </button>
+                {/* 참여 화면으로 버튼 제거 */}
                 <button 
                   className={styles.completionButton}
                   onClick={goHome}
@@ -91,7 +176,7 @@ export default function TinderPage() {
     );
   }
 
-  const currentCard = peopleCards[currentCardIndex];
+  const currentCandidate = candidates[currentCardIndex];
   
   return (
     <div className={styles.container}>
@@ -108,27 +193,44 @@ export default function TinderPage() {
           <div className={styles.cardHeader}>
             <button 
               className={styles.backButton}
-              onClick={goHome}
+              onClick={goToParticipate}
             >
-              ← 홈으로
+              ← 뒤로가기
             </button>
-            <h2 className={styles.cardTitle}>사람 선택하기</h2>
-            <span className={styles.progressText}>{currentCardIndex + 1} / {peopleCards.length}</span>
+            <h2 className={styles.cardTitle}>투표하기</h2>
+            <span className={styles.progressText}>{currentCardIndex + 1} / {candidates.length}</span>
           </div>
           
           {/* 카드 컨테이너 */}
           <div className={styles.cardContainer}>
             <TinderCard
-              key={currentCard.id}
-              onSwipe={(dir) => onSwipe(dir, currentCard.id)}
-              onCardLeftScreen={() => onCardLeftScreen(currentCard.id)}
+              key={currentCandidate.id}
+              onSwipe={(dir) => onSwipe(dir, currentCandidate.id)}
+              onCardLeftScreen={() => onCardLeftScreen(currentCandidate.id)}
               preventSwipe={[]}
               swipeThreshold={20}
               swipeRequirementType="position"
             >
               <div className={styles.card}>
-                <div className={styles.cardEmoji}>{currentCard.emoji}</div>
-                <div className={styles.cardName}>{currentCard.name}</div>
+                <div className={styles.cardEmoji}>
+                  {currentCandidate.type === 'kakao' ? '🏪' : 
+                   currentCandidate.type === 'yogiyo' ? '🍕' : '🍽️'}
+                </div>
+                <div className={styles.cardName}>{currentCandidate.name}</div>
+                <div className={styles.cardType}>
+                  {currentCandidate.type === 'kakao' ? '카카오맵' : 
+                   currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
+                </div>
+                {currentCandidate.detail && (
+                  <div className={styles.cardDetail}>
+                    {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
+                      <div>📍 {currentCandidate.detail.addr}</div>
+                    )}
+                    {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
+                      <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}분</div>
+                    )}
+                  </div>
+                )}
               </div>
             </TinderCard>
           </div>
@@ -137,20 +239,20 @@ export default function TinderPage() {
           <div className={styles.directionContainer}>
             <div className={styles.directionRow}>
               <div className={styles.directionItem}>
-                <span className={styles.directionText}>⬆️ 위쪽</span>
+                <span className={styles.directionText}>⬆️ 좋아요</span>
               </div>
             </div>
             <div className={styles.directionRow}>
               <div className={styles.directionItem}>
-                <span className={styles.directionText}>⬅️ 왼쪽</span>
+                <span className={styles.directionText}>⬅️ 싫어요</span>
               </div>
               <div className={styles.directionItem}>
-                <span className={styles.directionText}>오른쪽 ➡️</span>
+                <span className={styles.directionText}>괜찮아요 ➡️</span>
               </div>
             </div>
             <div className={styles.directionRow}>
               <div className={styles.directionItem}>
-                <span className={styles.directionText}>아래쪽 ⬇️</span>
+                <span className={styles.directionText}>절대 안돼 ⬇️</span>
               </div>
             </div>
           </div>
@@ -158,8 +260,50 @@ export default function TinderPage() {
           {/* 안내 텍스트 */}
           <div className={styles.instructionContainer}>
             <p className={styles.instructionText}>
-              카드를 원하는 방향으로 스와이프하세요!
+              카드를 원하는 방향으로 스와이프하여 투표하세요!
             </p>
+          </div>
+
+          {/* 결과 보기 버튼들 */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '20px', 
+            right: '20px',
+            display: 'flex',
+            gap: '10px'
+          }}>
+            <button 
+              onClick={() => router.push(`/live-results/${groupId}`)}
+              style={{
+                background: '#28a745',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)'
+              }}
+            >
+              실시간 결과
+            </button>
+            <button 
+              onClick={viewResults}
+              style={{
+                background: '#dc3545',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(220, 53, 69, 0.3)'
+              }}
+            >
+              최종 결과
+            </button>
           </div>
         </div>
       </div>

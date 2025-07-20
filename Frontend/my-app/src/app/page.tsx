@@ -11,6 +11,22 @@ export default function HomePage() {
   const [joinRoomInput, setJoinRoomInput] = useState('');
   const router = useRouter();
 
+  // URL 파라미터 확인하여 모달 자동 열기
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    
+    if (action === 'create') {
+      setShowCreateModal(true);
+      // URL에서 파라미터 제거
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (action === 'join') {
+      setShowJoinModal(true);
+      // URL에서 파라미터 제거
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Create Room 모달 상태
   const [createRoomData, setCreateRoomData] = useState({
     location: '',
@@ -20,6 +36,7 @@ export default function HomePage() {
     visit: false,
     visitTime: ''
   });
+  const [showWarning, setShowWarning] = useState(false);
 
   const [searchKeyword, setSearchKeyword] = useState('');
   const [locationLat, setLocationLat] = useState<number | null>(null);
@@ -53,9 +70,9 @@ export default function HomePage() {
     console.log('joinRoom 함수 호출됨, inputRoomId:', inputRoomId);
     
     if (inputRoomId && inputRoomId.trim()) {
-      console.log('방 ID가 유효함, 카카오지도 화면으로 이동');
-      // URL 파라미터로 방 ID 전달
-      router.push(`/map?roomId=${encodeURIComponent(inputRoomId.trim())}`);
+      console.log('방 ID가 유효함, 참여 화면으로 이동');
+      // 참여 화면으로 직접 이동
+      router.push(`/participate/${inputRoomId.trim()}`);
       setShowJoinModal(false);
       setJoinRoomInput('');
     } else {
@@ -93,14 +110,26 @@ export default function HomePage() {
       visit: false,
       visitTime: ''
     });
+    setShowWarning(false);
   };
 
   // Create Room 데이터 업데이트
   const updateCreateRoomData = (field: string, value: any) => {
-    setCreateRoomData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setCreateRoomData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // delivery나 visit가 선택되면 경고 메시지 숨김
+      if (field === 'delivery' || field === 'visit') {
+        if (newData.delivery || newData.visit) {
+          setShowWarning(false);
+        }
+      }
+      
+      return newData;
+    });
   };
 
   // 방 생성 함수
@@ -115,10 +144,20 @@ export default function HomePage() {
       alert('지도의 위치를 지정해주세요.');
       return;
     }
+    
+    // delivery와 visit 중 하나는 반드시 선택해야 함
+    if (!createRoomData.delivery && !createRoomData.visit) {
+      setShowWarning(true);
+      return;
+    }
+    
+    // delivery를 선택했다면 배달 시간도 필수
     if (createRoomData.delivery && !createRoomData.deliveryTime) {
       alert('최대 배달 소요 시간을 선택해주세요.');
       return;
     }
+    
+    // visit를 선택했다면 도보 시간도 필수
     if (createRoomData.visit && !createRoomData.visitTime) {
       alert('최대 도보 소요 시간을 선택해주세요.');
       return;
@@ -296,6 +335,21 @@ export default function HomePage() {
               </select>
             </div>
 
+            {/* 필수 선택 안내 */}
+            {showWarning && (
+              <div style={{ 
+                marginBottom: '20px', 
+                padding: '10px', 
+                background: '#fff3cd', 
+                border: '1px solid #ffeaa7', 
+                borderRadius: '8px',
+                fontSize: '14px',
+                color: '#856404'
+              }}>
+                ⚠️ 배달 또는 방문 중 하나는 반드시 선택해주세요.
+              </div>
+            )}
+
             {/* Delivery 옵션 */}
             <div className={styles.optionGroup}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -312,8 +366,9 @@ export default function HomePage() {
                     className={styles.timeSelect}
                     value={createRoomData.deliveryTime}
                     onChange={(e) => updateCreateRoomData('deliveryTime', e.target.value)}
+                    required
                   >
-                    <option value="" disabled>최대 배달 소요 시간</option>
+                    <option value="">최대 배달 소요 시간</option>
                     <option value="10">10분</option>
                     <option value="20">20분</option>
                     <option value="30">30분</option>
@@ -341,8 +396,9 @@ export default function HomePage() {
                     className={styles.timeSelect}
                     value={createRoomData.visitTime}
                     onChange={(e) => updateCreateRoomData('visitTime', e.target.value)}
+                    required
                   >
-                    <option value="" disabled>최대 도보 소요 시간</option>
+                    <option value="">최대 도보 소요 시간</option>
                     <option value="5">5분</option>
                     <option value="10">10분</option>
                     <option value="20">20분</option>

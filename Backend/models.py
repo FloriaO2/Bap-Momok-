@@ -48,7 +48,8 @@ class GroupData(BaseModel):
     radius: Optional[int] = None
     participants: Optional[Dict[str, Participant]] = Field(
         default=None, description="참가자 목록. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
-    start_votingtime: str
+    start_votingtime: int = Field(description="투표 시작까지 남은 시간(분)")
+    group_creation_time: Optional[str] = Field(default=None, description="그룹 생성 시간. 입력하지 않으면 현재 시간으로 자동 처리됩니다.")
     state: str = Field(default="suggestion", description="그룹 상태. 입력하지 않으면 suggestion으로 자동 처리됩니다.")
     votes: Optional[Dict[str, dict]] = Field(
         default=None, description="투표 정보. 입력하지 않으면 빈 객체로 자동 처리됩니다.", example={})
@@ -101,6 +102,9 @@ class GroupData(BaseModel):
             self.participants = {}
         if self.votes is None:
             self.votes = {}
+        if self.group_creation_time is None:
+            from datetime import datetime
+            self.group_creation_time = datetime.now().isoformat()
         errors = []
         if self.delivery and self.delivery_time is None:
             errors.append('delivery가 true일 때 delivery_time은 필수입니다.')
