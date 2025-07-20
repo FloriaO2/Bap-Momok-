@@ -59,6 +59,7 @@ POST /data
       "delivery": true,
       "delivery_time": "18:00",
       "offline": true,
+      "radius": 300,
       "participants": {
         "participant_1": {
           "nickname": "재호",
@@ -66,7 +67,6 @@ POST /data
           "vote_complete": false
         }
       },
-      "radius": 300,
       "start_votingtime": "2025-07-19T18:30:00",
       "state": "suggestion",
       "votes": {},
@@ -124,6 +124,7 @@ POST /groups
     "delivery": true,
     "delivery_time": "18:00",
     "offline": true,
+    "radius": 300,
     "participants": {
       "participant_1": {
         "nickname": "재호",
@@ -131,7 +132,6 @@ POST /groups
         "vote_complete": false
       }
     },
-    "radius": 300,
     "start_votingtime": "2025-07-19T18:30:00",
     "state": "suggestion",
     "votes": {},
@@ -177,6 +177,7 @@ PUT /groups/{group_id}
     "delivery": true,
     "delivery_time": "18:00",
     "offline": true,
+    "radius": 300,
     "participants": {
       "participant_1": {
         "nickname": "재호",
@@ -184,7 +185,6 @@ PUT /groups/{group_id}
         "vote_complete": false
       }
     },
-    "radius": 300,
     "start_votingtime": "2025-07-19T18:30:00",
     "state": "voting",
     "votes": {
