@@ -73,6 +73,10 @@ def get_group_by_id(group_id: str):
     group = get_group(group_id)
     if group is None:
         raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    
+    # 순위 계산
+    group.calculate_ranks()
+    
     return group
 
 @app.post("/groups")
@@ -212,6 +216,9 @@ def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
     print(f"[add_or_update_vote] votes after update: {group.votes}")
     update_candidate_vote_counts(group)
     print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
+    # 순위 계산 및 업데이트
+    group.calculate_ranks()
+    print(f"[add_or_update_vote] candidates after rank calculation: {group.candidates}")
     # 참가자 voted_count 업데이트
     participant = group.participants.get(user_id)
     if participant:
@@ -234,3 +241,52 @@ def join_group(group_id: str, join: ParticipantJoin):
     group.participants[participant_id] = participant
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "참가자가 성공적으로 추가되었습니다", "participant_id": participant_id, "data": group}
+
+@app.get("/groups/{group_id}/results")
+def get_voting_results(group_id: str):
+    """투표 결과와 순위를 조회합니다."""
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    
+    # 순위 계산
+    group.calculate_ranks()
+    
+    # 전체 결과 (순위순으로 정렬)
+    all_candidates = []
+    for candidate_id, candidate in group.candidates.items():
+        all_candidates.append({
+            "id": candidate_id,
+            "name": candidate.name,
+            "type": candidate.type,
+            "rank": candidate.rank,
+            "good": candidate.good,
+            "soso": candidate.soso,
+            "bad": candidate.bad,
+            "never": candidate.never
+        })
+    
+    # 순위순으로 정렬
+    all_candidates.sort(key=lambda x: x["rank"])
+    
+    # Top3 추출 (never이 없는 후보들 중에서)
+    top3_candidates = []
+    for candidate in all_candidates:
+        if candidate["never"] == 0 and len(top3_candidates) < 3:
+            top3_candidates.append({
+                "id": candidate["id"],
+                "name": candidate["name"],
+                "type": candidate["type"],
+                "rank": candidate["rank"],
+                "good": candidate["good"],
+                "soso": candidate["soso"],
+                "bad": candidate["bad"],
+                "never": candidate["never"]
+            })
+    
+    return {
+        "group_id": group_id,
+        "total_candidates": len(all_candidates),
+        "top3": top3_candidates,
+        "all_results": all_candidates
+    }
