@@ -1,5 +1,5 @@
 # main.py
-from fastapi import FastAPI, HTTPException, UploadFile, File, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from models import GroupCreate, GroupUpdate, GroupData, GroupsData, Candidate, Vote, ParticipantJoin, Participant
 from database import (
@@ -11,6 +11,7 @@ from typing import Dict, Optional
 import json
 import random
 import string
+import requests
 
 app = FastAPI(title="Babmomok API", description="밥모임 API 서버")
 
@@ -56,6 +57,10 @@ def update_candidate_vote_counts(group):
                     candidate.never += 1
                 elif vote_value == "soso":
                     candidate.soso += 1
+
+YOGIYO_AUTH = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTI4Mzc3OTUsImV4cCI6MTc1Mjg0NDk5NSwicGxhdGZvcm0iOiJZR1kiLCJyb2xlIjoidXNlciIsInN1Yl9pZCI6IjkwMjIxNTQyOSIsImJhc2VfdXJsIjoiaHR0cHM6Ly93d3cueW9naXlvLmNvLmtyIn0.nQzYafM-w33dP5Pc8uRQsbk3CQwQmM4zxuHPRYIF2JSnihhl7PwChpcc7KZuM6y9MRgelIjg3OPjSGFpPrwdMi4AzYA5EYph0mLn0rpWi6T_fLTRsRnso3IUc5EGZSNHoC1UXPopBUEMQi7tNLrDbaxRFtcAc-Q5L3GPP0M3438Xick7DZ648JPtk2nAYKNp-uGhLoYG1VFZw3sIl7dgSyoZhzyvD6pmOhNc1GzhXRFtUdTv8WqAr3aKjmjWq6xpzrzmXu7AHkaMifi1N-lm0-Wi25M6XRukWUI4YIgPd7RmyAadRQh7sJm9pQYxPMVnhfdgthxSmTLsSkomn2izqg"
+YOGIYO_APISECRET = "fe5183cc3dea12bd0ce299cf110a75a2"
+YOGIYO_APIKEY = "iphoneap"
 
 @app.get("/")
 def read_root():
@@ -290,3 +295,33 @@ def get_voting_results(group_id: str):
         "top3": top3_candidates,
         "all_results": all_candidates
     }
+
+@app.get("/groups/{group_id}/yogiyo-restaurants")
+def get_yogiyo_restaurants(group_id: str, category: str = Query("", description="카테고리(선택)")):
+    """
+    그룹의 위치(x, y)로 요기요에서 배달 가능한 식당 전체 정보를 반환합니다.
+    category 파라미터로 카테고리 필터링도 지원합니다.
+    """
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+
+    lat = group.x
+    lng = group.y
+
+    url = f"https://www.yogiyo.co.kr/api/v2/restaurants?lat={lat}&lng={lng}&order=rank"
+    if category:
+        url += f"&category={category}"
+
+    headers = {
+        "Authorization": YOGIYO_AUTH,
+        "X-Apisecret": YOGIYO_APISECRET,
+        "X-Apikey": YOGIYO_APIKEY,
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise HTTPException(status_code=502, detail="요기요 API 호출 실패")
+
+    return response.json()
