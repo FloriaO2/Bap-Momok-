@@ -68,16 +68,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
               psRef.current.keywordSearch('맛집', (data: any, status: any) => {
                 setLoading(false);
                 if (status === window.kakao.maps.services.Status.OK) {
-                  const restaurantData = data.map((place: any, index: number) => ({
-                    id: `search_${index}`,
-                    name: place.place_name,
-                    description: place.category_name ? place.category_name.split('>').pop() : '',
-                    image: '',
-                    category: getCategoryFromName(place.place_name, place.category_name),
-                    address: place.road_address_name || place.address_name,
-                    phone: place.phone
-                  }));
-                  setSearchResults(restaurantData);
+                  setSearchResults(data); // place 원본 객체 그대로 저장
                   console.log(`[자동 맛집 검색] x: ${groupData.x}, y: ${groupData.y}, radius: ${groupData.radius}m, keyword: "맛집"`);
                 } else {
                   setSearchResults([]);
@@ -158,17 +149,8 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
     psRef.current.keywordSearch(searchTerm, (data: any, status: any) => {
       setLoading(false);
       if (status === window.kakao.maps.services.Status.OK) {
-        const restaurantData = data.map((place: any, index: number) => ({
-          id: `search_${index}`,
-          name: place.place_name,
-          description: place.category_name ? place.category_name.split('>').pop() : '',
-          image: '',
-          category: getCategoryFromName(place.place_name, place.category_name),
-          address: place.road_address_name || place.address_name,
-          phone: place.phone
-        }));
-        setSearchResults(restaurantData);
-        console.log(`[카카오맵 검색 결과] ${restaurantData.length}개 음식점 발견`);
+        setSearchResults(data); // place 원본 객체 그대로 저장
+        console.log(`[카카오맵 검색 결과] ${data.length}개 음식점 발견`);
       } else {
         setSearchResults([]);
       }
@@ -361,22 +343,31 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
                       color: "#333",
                       marginBottom: "4px"
                     }}>
-                      {restaurant.name}
+                      {restaurant.place_name || restaurant.name}
                     </div>
                     <div style={{ 
                       fontSize: "14px", 
                       color: "#666",
                       marginBottom: "4px"
                     }}>
-                      {restaurant.description}
+                      {restaurant.category_name ? restaurant.category_name.split('>').pop() : ''}
                     </div>
-                    {restaurant.address && (
+                    {restaurant.road_address_name && (
                       <div style={{ 
                         fontSize: "12px", 
                         color: "#999",
                         marginBottom: "2px"
                       }}>
-                        📍 {restaurant.address}
+                        📍 {restaurant.road_address_name}
+                      </div>
+                    )}
+                    {restaurant.address_name && (
+                      <div style={{ 
+                        fontSize: "12px", 
+                        color: "#999",
+                        marginBottom: "2px"
+                      }}>
+                        📍 {restaurant.address_name}
                       </div>
                     )}
                     {restaurant.phone && (
