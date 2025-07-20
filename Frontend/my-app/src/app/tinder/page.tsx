@@ -45,7 +45,7 @@ export default function TinderPage() {
   const submitVote = async (candidateId: string, vote: string) => {
     if (!groupId) return;
     
-    const participantId = sessionStorage.getItem('participant_id');
+    const participantId = sessionStorage.getItem(`participant_id_${groupId}`);
     if (!participantId) {
       alert('참가자 정보가 없습니다. 다시 참여해주세요.');
       return;
@@ -117,6 +117,28 @@ export default function TinderPage() {
       router.push(`/participate/${groupId}`);
     }
   };
+
+  // 모든 후보 투표 완료 시 vote_complete true로 업데이트
+  React.useEffect(() => {
+    if (currentCardIndex >= candidates.length) {
+      if (!groupId) return;
+      const participantId = sessionStorage.getItem(`participant_id_${groupId}`);
+      if (!participantId) return;
+      const updateVoteComplete = async () => {
+        try {
+          await fetch(`http://localhost:8000/groups/${groupId}/participants/${participantId}/vote-complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vote_complete: true })
+          });
+        } catch (e) {
+          // TODO: 토스트로 안내 (alert 대체)
+          alert('투표 완료 상태 업데이트에 실패했습니다.');
+        }
+      };
+      updateVoteComplete();
+    }
+  }, [groupId, currentCardIndex, candidates.length]);
 
   if (loading) {
     return (

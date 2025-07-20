@@ -20,14 +20,16 @@ export default function LiveResultsPage() {
   const params = useParams();
   const groupId = params.group_id;
   const [candidates, setCandidates] = useState<any[]>([]);
+  const [groupData, setGroupData] = useState<any>(null);
+  const [votingProgress, setVotingProgress] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    console.log("groupId:", groupId);
     if (!groupId) return;
+    // 후보 실시간 업데이트 (Firebase)
     const candidatesRef = ref(db, `groups/${groupId}/candidates`);
     const unsubscribe = onValue(candidatesRef, (snapshot) => {
       const data = snapshot.val() || {};
-      console.log("Firebase candidates data:", data);
       const arr = Object.entries(data).map(([id, c]: any) => ({
         id,
         ...c,
@@ -41,7 +43,32 @@ export default function LiveResultsPage() {
       arr.forEach((c, i) => (c.rank = i + 1));
       setCandidates(arr);
     });
-    return () => off(candidatesRef, "value", unsubscribe);
+
+    // 투표 진행률 및 그룹 정보 (백엔드)
+    const fetchData = async () => {
+      try {
+        const groupResponse = await fetch(`http://localhost:8000/groups/${groupId}`);
+        const groupData = await groupResponse.json();
+        setGroupData(groupData);
+        // 투표 진행률 계산
+        const participantsObj = groupData.participants || {};
+        const totalParticipants = Object.keys(participantsObj).length;
+        const completedParticipants = Object.values(participantsObj).filter((p: any) => p.vote_complete).length;
+        const progress = totalParticipants > 0 ? (completedParticipants / totalParticipants) * 100 : 0;
+        setVotingProgress(progress);
+      } catch (error) {
+        console.error("데이터 가져오기 실패:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 3000);
+
+    return () => {
+      off(candidatesRef, "value", unsubscribe);
+      clearInterval(interval);
+    };
   }, [groupId]);
 
   console.log("candidates state:", candidates);
