@@ -167,7 +167,8 @@ export default function HomePage() {
     const delivery = createRoomData.delivery;
     const offline = createRoomData.visit;
     const delivery_time = delivery ? Number(createRoomData.deliveryTime) : 0;
-    const radius = delivery ? 70 * delivery_time : 0;
+    const visit_time = offline ? Number(createRoomData.visitTime) : 0;
+    const radius = offline ? 70 * visit_time : 0; // 방문(오프라인)일 때만 radius 계산
     const x = locationLat;
     const y = locationLng;
     const start_votingtime = createRoomData.startTime;
@@ -177,6 +178,7 @@ export default function HomePage() {
         delivery,
         delivery_time,
         offline,
+        visit_time,
         radius,
         start_votingtime,
         state: 'suggestion',
@@ -318,6 +320,7 @@ export default function HomePage() {
               }}
               centerLat={centerLat}
               centerLng={centerLng}
+              pinButtonType="gps"
             />
 
             {/* 후보군 추천 시간 */}
