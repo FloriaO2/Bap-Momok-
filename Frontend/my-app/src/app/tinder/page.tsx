@@ -45,7 +45,7 @@ export default function TinderPage() {
   const submitVote = async (candidateId: string, vote: string) => {
     if (!groupId) return;
     
-    const participantId = localStorage.getItem('participant_id');
+    const participantId = sessionStorage.getItem('participant_id');
     if (!participantId) {
       alert('참가자 정보가 없습니다. 다시 참여해주세요.');
       return;

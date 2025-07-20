@@ -270,29 +270,11 @@ def get_voting_results(group_id: str):
             "bad": candidate.bad,
             "never": candidate.never
         })
-    
-    # 순위순으로 정렬
     all_candidates.sort(key=lambda x: x["rank"])
-    
-    # Top3 추출 (never이 없는 후보들 중에서)
-    top3_candidates = []
-    for candidate in all_candidates:
-        if candidate["never"] == 0 and len(top3_candidates) < 3:
-            top3_candidates.append({
-                "id": candidate["id"],
-                "name": candidate["name"],
-                "type": candidate["type"],
-                "rank": candidate["rank"],
-                "good": candidate["good"],
-                "soso": candidate["soso"],
-                "bad": candidate["bad"],
-                "never": candidate["never"]
-            })
-    
+    # top3는 never 여부와 상관없이 상위 3개
+    top3 = all_candidates[:3]
     return {
-        "group_id": group_id,
-        "total_candidates": len(all_candidates),
-        "top3": top3_candidates,
+        "top3": top3,
         "all_results": all_candidates
     }
 

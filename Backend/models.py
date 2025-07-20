@@ -60,39 +60,25 @@ class GroupData(BaseModel):
         """후보들의 순위를 계산하고 업데이트합니다."""
         if not self.candidates:
             return
-        
-        # 각 후보의 점수와 never 개수를 계산
+
         candidate_scores = []
         for candidate_id, candidate in self.candidates.items():
-            # 점수 계산: good(+1), soso(0), bad(-2)
-            score = candidate.good * 1 + candidate.soso * 0 + candidate.bad * (-2)
+            # 점수 계산: good(+1), soso(0), bad(-2), never(-100)
+            score = candidate.good * 1 + candidate.soso * 0 + candidate.bad * (-2) + (candidate.never or 0) * (-100)
             candidate_scores.append({
                 'id': candidate_id,
                 'candidate': candidate,
-                'score': score,
-                'never_count': candidate.never or 0
+                'score': score
             })
-        
-        # never 개수별로 그룹화하고 각 그룹 내에서 점수순 정렬
-        never_groups = {}
-        for item in candidate_scores:
-            never_count = item['never_count']
-            if never_count not in never_groups:
-                never_groups[never_count] = []
-            never_groups[never_count].append(item)
-        
-        # 각 never 그룹 내에서 점수순 정렬 (높은 점수가 위로)
-        for never_count in never_groups:
-            never_groups[never_count].sort(key=lambda x: x['score'], reverse=True)
-        
-        # never 개수가 적은 순서대로 순위 부여
+
+        # 점수순 정렬 (높은 점수가 위로)
+        candidate_scores.sort(key=lambda x: x['score'], reverse=True)
+
+        # 순위 부여
         current_rank = 1
-        never_counts = sorted(never_groups.keys())
-        
-        for never_count in never_counts:
-            for item in never_groups[never_count]:
-                item['candidate'].rank = current_rank
-                current_rank += 1
+        for item in candidate_scores:
+            item['candidate'].rank = current_rank
+            current_rank += 1
 
     @model_validator(mode="after")
     def fill_defaults(self):

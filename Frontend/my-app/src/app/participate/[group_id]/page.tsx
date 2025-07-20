@@ -113,7 +113,8 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
 
   const handleNicknameSubmit = async () => {
     if (nickname.trim()) {
-      localStorage.setItem("nickname", nickname.trim());
+      // 닉네임 저장
+      sessionStorage.setItem("nickname", nickname.trim());
       try {
         const response = await fetch(
           `http://localhost:8000/groups/${groupId}/participants`,
@@ -125,7 +126,8 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
         );
         const result = await response.json();
         if (result.participant_id) {
-          localStorage.setItem("participant_id", result.participant_id);
+          // 참가자 ID 저장
+          sessionStorage.setItem("participant_id", result.participant_id);
           setShowNicknameModal(false);
         } else {
           alert("참가 등록 실패");

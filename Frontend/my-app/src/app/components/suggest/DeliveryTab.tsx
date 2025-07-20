@@ -26,6 +26,7 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(50);
 
   // 카테고리 목록
   const categories = [
@@ -139,6 +140,10 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
     new Map(filteredRestaurants.map(r => [r.id, r])).values()
   );
 
+  const handleLoadMoreVisible = () => {
+    setVisibleCount(prev => prev + 50);
+  };
+
   // 카테고리 탭 드래그 스크롤 구현
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -250,7 +255,7 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
         ) : (
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              {uniqueRestaurants.map((r) => (
+              {uniqueRestaurants.slice(0, visibleCount).map((r) => (
                 <div
                   key={r.id}
                   style={{ display: "flex", alignItems: "center", padding: "15px", background: "#f8f9fa", borderRadius: "12px", gap: "15px" }}
@@ -320,9 +325,9 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
                 </div>
               ))}
             </div>
-            {hasMore && activeCategory !== 'all' && (
+            {uniqueRestaurants.length > visibleCount && (
               <div style={{ textAlign: "center", margin: "20px 0" }}>
-                <button onClick={loadMore} disabled={loading} style={{
+                <button onClick={handleLoadMoreVisible} style={{
                   background: "#994d52",
                   color: "#fff",
                   border: "none",
@@ -330,10 +335,9 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
                   padding: "10px 30px",
                   fontSize: "16px",
                   fontWeight: "bold",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.7 : 1
+                  cursor: "pointer"
                 }}>
-                  {loading ? '로딩 중...' : '더보기'}
+                  더보기
                 </button>
               </div>
             )}
