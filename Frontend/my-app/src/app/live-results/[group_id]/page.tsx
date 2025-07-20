@@ -2,20 +2,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, off } from "firebase/database";
+import { database } from "@/firebase";
+import { ref, onValue, off } from "firebase/database";
 
 // participate 페이지와 동일한 firebaseConfig 사용
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  databaseURL: "https://bap-momok-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  // ...etc
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
 export default function LiveResultsPage() {
   const params = useParams();
   const groupId = params.group_id;
@@ -27,7 +17,7 @@ export default function LiveResultsPage() {
   useEffect(() => {
     if (!groupId) return;
     // 후보 실시간 업데이트 (Firebase)
-    const candidatesRef = ref(db, `groups/${groupId}/candidates`);
+    const candidatesRef = ref(database, `groups/${groupId}/candidates`);
     const unsubscribe = onValue(candidatesRef, (snapshot) => {
       const data = snapshot.val() || {};
       const arr = Object.entries(data).map(([id, c]: any) => ({
