@@ -139,211 +139,145 @@ export default function LiveResultsPage({ params }: { params: Promise<{ group_id
   return (
     <div style={{ 
       minHeight: "100vh", 
-      background: "#fff",
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      padding: "20px",
       fontFamily: "Arial, sans-serif"
     }}>
-      {/* 헤더 */}
-      <div style={{ 
-        display: "flex", 
-        alignItems: "center", 
-        padding: "20px",
-        borderBottom: "1px solid #f0f0f0"
+      <div style={{
+        maxWidth: "600px",
+        margin: "40px auto",
+        background: "#fff",
+        borderRadius: "20px",
+        padding: "30px",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+        minHeight: "500px"
       }}>
-        <button 
-          onClick={() => router.back()}
-          style={{ 
-            background: "none", 
-            border: "none", 
+        {/* 헤더 */}
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          paddingBottom: "20px",
+          borderBottom: "1px solid #f0f0f0"
+        }}>
+          <button 
+            onClick={() => router.push(`/results/${groupId}`)}
+            style={{ 
+              background: "none", 
+              border: "none", 
+              fontSize: "24px", 
+              cursor: "pointer",
+              color: "#333"
+            }}
+          >
+            ✕
+          </button>
+          <h1 style={{ 
+            flex: 1, 
+            textAlign: "center", 
             fontSize: "24px", 
-            cursor: "pointer",
-            color: "#333"
-          }}
-        >
-          ✕
-        </button>
-        <h1 style={{ 
-          flex: 1, 
-          textAlign: "center", 
-          fontSize: "24px", 
-          fontWeight: "bold",
-          color: "#333",
-          margin: 0
-        }}>
-          Results
-        </h1>
-        <div style={{ width: "24px" }}></div> {/* 균형을 위한 빈 공간 */}
-      </div>
-
-      {/* 투표 진행률 */}
-      <div style={{ padding: "20px" }}>
-        <h2 style={{ 
-          fontSize: "18px", 
-          fontWeight: "bold", 
-          color: "#333", 
-          marginBottom: "15px"
-        }}>
-          Voting
-        </h2>
-        <div style={{ 
-          width: "100%", 
-          height: "8px", 
-          background: "#f0f0f0", 
-          borderRadius: "4px",
-          overflow: "hidden"
-        }}>
-          <div style={{ 
-            width: `${votingProgress}%`, 
-            height: "100%", 
-            background: "#dc3545", 
-            borderRadius: "4px",
-            transition: "width 0.3s ease"
-          }}></div>
-        </div>
-        <div style={{ 
-          fontSize: "14px", 
-          color: "#666", 
-          marginTop: "8px",
-          textAlign: "center"
-        }}>
-          {Math.round(votingProgress)}% 완료
-        </div>
-      </div>
-
-      {/* Top 3 */}
-      <div style={{ padding: "0 20px 20px" }}>
-        <h2 style={{ 
-          fontSize: "20px", 
-          fontWeight: "bold", 
-          color: "#333", 
-          marginBottom: "20px"
-        }}>
-          Top 3
-        </h2>
-        
-        <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          {getCandidates().map((candidate: any, index: number) => (
-            <div key={candidate.id} style={{ 
-              display: "flex",
-              alignItems: "center",
-              padding: "15px",
-              background: "#f8f9fa",
-              borderRadius: "12px",
-              gap: "15px"
-            }}>
-              {/* 순위 */}
-              <div style={{ 
-                fontSize: "24px", 
-                fontWeight: "bold",
-                color: "#333",
-                minWidth: "40px",
-                textAlign: "center"
-              }}>
-                {candidate.rank}
-              </div>
-              
-              {/* 이미지 */}
-              <div style={{ 
-                width: "60px", 
-                height: "60px", 
-                borderRadius: "8px",
-                overflow: "hidden",
-                flexShrink: 0
-              }}>
-                <img 
-                  src={candidate.image}
-                  alt={candidate.name}
-                  style={{ 
-                    width: "100%", 
-                    height: "100%", 
-                    objectFit: "cover"
-                  }}
-                />
-              </div>
-              
-              {/* 정보 */}
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  fontSize: "18px", 
-                  fontWeight: "bold", 
-                  color: "#333",
-                  marginBottom: "4px"
-                }}>
-                  {candidate.name}
-                </div>
-                <div style={{ 
-                  fontSize: "14px", 
-                  color: "#666"
-                }}>
-                  {candidate.type}
-                </div>
-              </div>
-              
-              {/* 투표 수 */}
-              <div style={{ 
-                fontSize: "12px", 
-                color: "#666",
-                textAlign: "right"
-              }}>
-                <div>👍 {candidate.good}</div>
-                <div>👌 {candidate.soso}</div>
-                {/*<div>👎 {candidate.bad}</div>*/}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 투표 완료율이 75% 이상일 때 안내 메시지 */}
-      {votingProgress >= 75 && (
-        <div style={{ 
-          position: "fixed",
-          bottom: "20px",
-          left: "20px",
-          right: "20px",
-          background: "#dc3545",
-          color: "#fff",
-          padding: "15px",
-          borderRadius: "12px",
-          textAlign: "center",
-          fontSize: "16px",
-          fontWeight: "bold"
-        }}>
-          투표가 거의 완료되었습니다! 잠시 후 최종 결과로 이동합니다...
-        </div>
-      )}
-
-      {/* 새 투표 시작 버튼 */}
-      <div style={{ 
-        position: "fixed",
-        bottom: "20px",
-        left: "20px", 
-        right: "20px"
-      }}>
-        <button
-          onClick={() => router.push('/?action=create')}
-          style={{ 
-            width: "100%",
-            background: "#dc3545",
-            color: "#fff",
-            border: "none",
-            borderRadius: "12px",
-            padding: "16px",
-            fontSize: "16px",
             fontWeight: "bold",
-            cursor: "pointer",
-            transition: "all 0.3s ease"
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = "#c82333";
-            e.currentTarget.style.transform = "translateY(-2px)";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = "#dc3545";
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
-          Start a new poll
-        </button>
+            color: "#333",
+            margin: 0
+          }}>
+            실시간 투표 현황
+          </h1>
+          <div style={{ width: "24px" }}></div>
+        </div>
+
+        {/* 투표 진행률 */}
+        <div style={{ padding: "30px 0 20px" }}>
+          <h2 style={{ 
+            fontSize: "18px", 
+            fontWeight: "bold", 
+            color: "#333", 
+            marginBottom: "15px",
+            textAlign: "center"
+          }}>
+            투표 진행률
+          </h2>
+          <div style={{ 
+            width: "100%", 
+            height: "8px", 
+            background: "#f0f0f0", 
+            borderRadius: "4px",
+            overflow: "hidden"
+          }}>
+            <div style={{ 
+              width: `${votingProgress}%`, 
+              height: "100%", 
+              background: "linear-gradient(90deg, #667eea, #994d52)",
+              borderRadius: "4px",
+              transition: "width 0.3s ease"
+            }}></div>
+          </div>
+          <div style={{ 
+            fontSize: "14px", 
+            color: "#666", 
+            marginTop: "8px",
+            textAlign: "center"
+          }}>
+            {Math.round(votingProgress)}% 완료
+          </div>
+        </div>
+
+        {/* Top 3 */}
+        <div style={{ padding: "0 0 20px" }}>
+          <h2 style={{ 
+            fontSize: "20px", 
+            fontWeight: "bold", 
+            color: "#333", 
+            marginBottom: "20px",
+            textAlign: "center"
+          }}>
+            Top 3
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            {getCandidates().map((candidate: any, index: number) => (
+              <div key={candidate.id} style={{ 
+                display: "flex",
+                alignItems: "center",
+                padding: "15px",
+                background: "#f8f9fa",
+                borderRadius: "12px",
+                gap: "15px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
+              }}>
+                {/* 순위 */}
+                <div style={{ 
+                  fontSize: "24px", 
+                  fontWeight: "bold",
+                  color: index === 0 ? "#ffd700" : index === 1 ? "#c0c0c0" : "#cd7f32",
+                  minWidth: "40px",
+                  textAlign: "center"
+                }}>
+                  {candidate.rank}
+                </div>
+                {/* 이미지 */}
+                <div style={{ 
+                  width: "60px", 
+                  height: "60px", 
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  flexShrink: 0
+                }}>
+                  <img 
+                    src={candidate.image}
+                    alt={candidate.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                {/* 정보 */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "16px", fontWeight: "bold", color: "#333", marginBottom: "4px" }}>{candidate.name}</div>
+                  <div style={{ fontSize: "14px", color: "#666", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span>👍 {candidate.good}</span>
+                    <span>😐 {candidate.soso}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

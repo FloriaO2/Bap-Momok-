@@ -198,7 +198,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
 
   // 후보 추가 함수 (+버튼 클릭 시)
   const handleAddCandidate = async (restaurant: any) => {
-    const added_by = typeof window !== 'undefined' ? (localStorage.getItem('participant_id') || 'unknown') : 'unknown';
+    const added_by = typeof window !== 'undefined' ? (sessionStorage.getItem('participant_id') || 'unknown') : 'unknown';
     const body = {
       added_by,
       kakao_data: restaurant
