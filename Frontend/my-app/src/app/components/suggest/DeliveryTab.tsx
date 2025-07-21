@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 interface DeliveryTabProps {
   groupData: any;
@@ -23,12 +23,12 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [restaurants, setRestaurants] = useState<YogiyoRestaurant[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [pageNum, setPageNum] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(50);
 
-  // 카테고리 목록
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   const categories = [
     { id: 'all', name: '전체' },
     { id: '프랜차이즈', name: '프랜차이즈' },
@@ -43,109 +43,49 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
     { id: '카페디저트', name: '카페/디저트' }
   ];
 
-  const allCategoryIds = [
-    '프랜차이즈', '치킨', '피자양식', '중식', '한식', '일식돈까스', '족발보쌈', '야식', '분식', '카페디저트'
-  ];
-
-  // 카테고리별 page/done 상태 관리
-  const initialPageMap = Object.fromEntries(allCategoryIds.map(cat => [cat, 0]));
-  const initialDoneMap = Object.fromEntries(allCategoryIds.map(cat => [cat, false]));
-  const [categoryPageMap, setCategoryPageMap] = useState<{ [cat: string]: number }>(initialPageMap);
-  const [categoryDoneMap, setCategoryDoneMap] = useState<{ [cat: string]: boolean }>(initialDoneMap);
-
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  // 페이지별 식당 불러오기 (기존 fetchPage)
-  const fetchPage = async (category: string, pageNum: number) => {
-    const res = await fetch(`${BACKEND_URL}/groups/${groupId}/yogiyo-restaurants?category=${encodeURIComponent(category)}&page=${pageNum}`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.restaurants || [];
-  };
-
-  // 더보기(다음 페이지) 불러오기
-  const loadMore = async () => {
+  const fetchRestaurants = useCallback(async (page: number, category: string) => {
     setLoading(true);
-    if (activeCategory === 'all') {
-      // 전체: 아직 done이 아닌 카테고리 중 하나를 골라서 불러오기
-      const nextCat = allCategoryIds.find(cat => !categoryDoneMap[cat]);
-      if (!nextCat) {
-        setHasMore(false);
-        setLoading(false);
-        return;
+    try {
+      const categoryParam = category === 'all' ? '' : encodeURIComponent(category);
+      const res = await fetch(`${BACKEND_URL}/groups/${groupId}/yogiyo-restaurants?category=${categoryParam}&page=${page}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch restaurants');
       }
-      const pageNum = categoryPageMap[nextCat];
-      const newRestaurants = await fetchPage(nextCat, pageNum);
-      setRestaurants(prev => {
-        const all = [...prev, ...newRestaurants];
-        return Array.from(new Map(all.map(r => [r.id, r])).values());
-      });
-      setCategoryPageMap(prev => ({ ...prev, [nextCat]: pageNum + 1 }));
-      setCategoryDoneMap(prev => ({ ...prev, [nextCat]: newRestaurants.length < 60 }));
-      // 모든 카테고리가 done이면 더보기 숨김
-      const allDone = allCategoryIds.every(cat => (cat === nextCat ? newRestaurants.length < 60 : categoryDoneMap[cat]));
-      setHasMore(!allDone);
-    } else {
-      // 단일 카테고리
-      const pageNum = page;
-      const newRestaurants = await fetchPage(activeCategory, pageNum);
-      setRestaurants(prev => {
-        const all = [...prev, ...newRestaurants];
-        return Array.from(new Map(all.map(r => [r.id, r])).values());
-      });
-      setPage(prev => prev + 1);
-      setHasMore(newRestaurants.length === 60);
-    }
-    setLoading(false);
-  };
+      const data = await res.json();
+      const newRestaurants = data.restaurants || [];
+      
+      setRestaurants(prev => page === 1 ? newRestaurants : [...prev, ...newRestaurants]);
+      setHasMore(newRestaurants.length > 0);
 
-  // 카테고리 변경/초기화 시 1페이지만 불러오기
+    } catch (error) {
+      console.error("Error fetching restaurants:", error);
+      setHasMore(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [groupId, BACKEND_URL]);
+
   useEffect(() => {
     setRestaurants([]);
-    setPage(0);
+    setPageNum(1);
     setHasMore(true);
-    setLoading(true);
-    setCategoryPageMap(initialPageMap);
-    setCategoryDoneMap(initialDoneMap);
-    (async () => {
-      if (activeCategory === 'all') {
-        // 전체: 모든 카테고리 1페이지씩 불러오기
-        let allResults: YogiyoRestaurant[] = [];
-        for (const cat of allCategoryIds) {
-          const firstPage = await fetchPage(cat, 0);
-          allResults = allResults.concat(firstPage);
-          setCategoryPageMap(prev => ({ ...prev, [cat]: 1 }));
-          setCategoryDoneMap(prev => ({ ...prev, [cat]: firstPage.length < 60 }));
-        }
-        // id 기준 중복 제거
-        const unique = Array.from(new Map(allResults.map(r => [r.id, r])).values());
-        setRestaurants(unique);
-        setHasMore(true);
-      } else {
-        const firstPage = await fetchPage(activeCategory, 0);
-        setRestaurants(firstPage);
-        setHasMore(firstPage.length === 60);
-      }
-      setLoading(false);
-    })();
-    // eslint-disable-next-line
-  }, [activeCategory, groupData]);
+    fetchRestaurants(1, activeCategory);
+  }, [activeCategory, fetchRestaurants]);
+
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      const nextPage = pageNum + 1;
+      setPageNum(nextPage);
+      fetchRestaurants(nextPage, activeCategory);
+    }
+  };
 
   // 검색 필터
   const filteredRestaurants = restaurants.filter((r: any) => {
-    const matchesSearch = searchTerm === '' || r.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
+    return searchTerm === '' || r.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
-
-  // id 기준 중복 제거
-  const uniqueRestaurants = Array.from(
-    new Map(filteredRestaurants.map(r => [r.id, r])).values()
-  );
-
-  const handleLoadMoreVisible = () => {
-    setVisibleCount(prev => prev + 50);
-  };
-
+  
   // 카테고리 탭 드래그 스크롤 구현
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -250,14 +190,14 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
           <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
             식당 정보를 불러오는 중...
           </div>
-        ) : uniqueRestaurants.length === 0 ? (
+        ) : filteredRestaurants.length === 0 && !hasMore ? (
           <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
             식당이 없습니다
           </div>
         ) : (
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              {uniqueRestaurants.slice(0, visibleCount).map((r) => (
+              {filteredRestaurants.map((r) => (
                 <div
                   key={r.id}
                   style={{ display: "flex", alignItems: "center", padding: "15px", background: "#f8f9fa", borderRadius: "12px", gap: "15px" }}
@@ -281,17 +221,7 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
                   {/* + 버튼 */}
                   {typeof onAddCandidate === 'function' && (
                     <button
-                      onClick={() => onAddCandidate({
-                        id: r.id,
-                        name: r.name,
-                        description: '',
-                        rating: r.review_avg,
-                        image: r.thumbnail_url,
-                        category: r.categories[0] || '',
-                        detail: {
-                          thumbnail_url: r.thumbnail_url
-                        }
-                      })}
+                      onClick={() => onAddCandidate(r)}
                       disabled={registeredCandidateIds.includes(r.id)}
                       style={{
                         width: "40px",
@@ -327,9 +257,14 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
                 </div>
               ))}
             </div>
-            {uniqueRestaurants.length > visibleCount && (
+            {loading && (
+              <div style={{ textAlign: "center", color: "#999", padding: "20px 0" }}>
+                더 많은 식당을 불러오는 중...
+              </div>
+            )}
+            {!loading && hasMore && (
               <div style={{ textAlign: "center", margin: "20px 0" }}>
-                <button onClick={handleLoadMoreVisible} style={{
+                <button onClick={loadMore} style={{
                   background: "#994d52",
                   color: "#fff",
                   border: "none",

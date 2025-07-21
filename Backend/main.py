@@ -315,10 +315,15 @@ def get_voting_results(group_id: str):
     }
 
 @app.get("/groups/{group_id}/yogiyo-restaurants")
-def get_yogiyo_restaurants(group_id: str, category: str = Query("", description="카테고리(선택)")):
+def get_yogiyo_restaurants(
+    group_id: str, 
+    category: str = Query("", description="카테고리(선택)"),
+    page: int = Query(1, description="페이지 번호")
+):
     """
     그룹의 위치(x, y)로 요기요에서 배달 가능한 식당 전체 정보를 반환합니다.
     category 파라미터로 카테고리 필터링도 지원합니다.
+    page 파라미터로 페이지네이션을 지원합니다.
     """
     group = get_group(group_id)
     if group is None:
@@ -326,8 +331,9 @@ def get_yogiyo_restaurants(group_id: str, category: str = Query("", description=
 
     lat = group.x
     lng = group.y
+    items_per_page = 20  # 페이지 당 20개씩
 
-    url = f"https://www.yogiyo.co.kr/api/v2/restaurants?lat={lat}&lng={lng}&order=rank"
+    url = f"https://www.yogiyo.co.kr/api/v2/restaurants?items_per_page={items_per_page}&lat={lat}&lng={lng}&order=rank&page={page}"
     if category:
         url += f"&category={category}"
 
@@ -338,8 +344,13 @@ def get_yogiyo_restaurants(group_id: str, category: str = Query("", description=
         "User-Agent": "Mozilla/5.0"
     }
 
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        raise HTTPException(status_code=502, detail="요기요 API 호출 실패")
-
-    return response.json()
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()  # 200 OK가 아닐 경우 예외 발생
+        return response.json()
+    except requests.exceptions.HTTPError as err:
+        # 요기요 API에서 4xx 또는 5xx 응답이 올 경우
+        raise HTTPException(status_code=err.response.status_code, detail=f"요기요 API 오류: {err.response.text}")
+    except requests.exceptions.RequestException as err:
+        # 네트워크 문제 등 기타 요청 관련 예외
+        raise HTTPException(status_code=502, detail=f"요기요 API 호출 실패: {err}")
