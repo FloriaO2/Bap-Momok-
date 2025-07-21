@@ -52,34 +52,25 @@ def get_next_candidate_id(group):
     return f"candidate_{next_num}"
 
 def update_candidate_vote_counts(group):
-    # 후보가 없으면 바로 종료
-    if not group.candidates:
-        return
-
     # 후보별 집계 초기화
     for candidate in group.candidates.values():
         candidate.good = 0
         candidate.bad = 0
         candidate.never = 0
         candidate.soso = 0
-    
-    # votes가 없으면 집계할 필요 없음
-    if not group.votes:
-        return
-
     # votes 순회하며 집계
     for user_vote in group.votes.values():
         for candidate_id, vote_value in user_vote.items():
             candidate = group.candidates.get(candidate_id)
             if candidate:
                 if vote_value == "good":
-                    candidate.good = (candidate.good or 0) + 1
+                    candidate.good += 1
                 elif vote_value == "bad":
-                    candidate.bad = (candidate.bad or 0) + 1
+                    candidate.bad += 1
                 elif vote_value == "never":
-                    candidate.never = (candidate.never or 0) + 1
+                    candidate.never += 1
                 elif vote_value == "soso":
-                    candidate.soso = (candidate.soso or 0) + 1
+                    candidate.soso += 1
 
 YOGIYO_AUTH = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTI4Mzc3OTUsImV4cCI6MTc1Mjg0NDk5NSwicGxhdGZvcm0iOiJZR1kiLCJyb2xlIjoidXNlciIsInN1Yl9pZCI6IjkwMjIxNTQyOSIsImJhc2VfdXJsIjoiaHR0cHM6Ly93d3cueW9naXlvLmNvLmtyIn0.nQzYafM-w33dP5Pc8uRQsbk3CQwQmM4zxuHPRYIF2JSnihhl7PwChpcc7KZuM6y9MRgelIjg3OPjSGFpPrwdMi4AzYA5EYph0mLn0rpWi6T_fLTRsRnso3IUc5EGZSNHoC1UXPopBUEMQi7tNLrDbaxRFtcAc-Q5L3GPP0M3438Xick7DZ648JPtk2nAYKNp-uGhLoYG1VFZw3sIl7dgSyoZhzyvD6pmOhNc1GzhXRFtUdTv8WqAr3aKjmjWq6xpzrzmXu7AHkaMifi1N-lm0-Wi25M6XRukWUI4YIgPd7RmyAadRQh7sJm9pQYxPMVnhfdgthxSmTLsSkomn2izqg"
 YOGIYO_APISECRET = "fe5183cc3dea12bd0ce299cf110a75a2"
