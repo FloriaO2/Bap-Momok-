@@ -1,18 +1,11 @@
 "use client";
 import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { ref, onValue, off } from "firebase/database";
+import { database } from "../../../firebase";
 import DirectTab from '../../components/suggest/DirectTab';
 import DeliveryTab from '../../components/suggest/DeliveryTab';
 import SuggestCompleteWaitScreen from '../../components/suggest/SuggestCompleteWaitScreen';
-
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  rating: number;
-  image: string;
-  category: string;
-}
 
 export default function SuggestPage({ params }: { params: Promise<{ group_id: string }> }) {
   const resolvedParams = use(params);
@@ -29,8 +22,39 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
   };
   const [showSuggestCompleteScreen, setShowSuggestCompleteScreen] = useState(false);
   const [participantId, setParticipantId] = useState<string | null>(null);
+  
+  // 이미 등록된 후보 ID 목록을 실시간으로 관리하기 위한 상태
+  const [registeredYogiyoIds, setRegisteredYogiyoIds] = useState<number[]>([]);
+  const [registeredKakaoIds, setRegisteredKakaoIds] = useState<number[]>([]);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+  // 실시간으로 후보 목록 감지
+  useEffect(() => {
+    if (!groupId) return;
+
+    const candidatesRef = ref(database, `groups/${groupId}/candidates`);
+    const unsubscribe = onValue(candidatesRef, (snapshot) => {
+      const candidatesData = snapshot.val();
+      if (candidatesData) {
+        const allCandidates = Object.values(candidatesData);
+        
+        const yogiyoIds = allCandidates
+          .filter((c: any) => c.type === 'yogiyo' && c.detail?.yogiyo_id)
+          .map((c: any) => c.detail.yogiyo_id);
+        
+        const kakaoIds = allCandidates
+          .filter((c: any) => c.type === 'kakao' && c.detail?.kakao_id)
+          .map((c: any) => Number(c.detail.kakao_id));
+          
+        setRegisteredYogiyoIds(yogiyoIds);
+        setRegisteredKakaoIds(kakaoIds);
+      }
+    });
+
+    // 컴포넌트가 언마운트될 때 리스너 정리
+    return () => off(candidatesRef, "value", unsubscribe);
+  }, [groupId]);
 
   // 그룹 데이터에서 선택된 옵션 확인
   const hasDelivery = groupData?.delivery;
@@ -140,33 +164,26 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
     await fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/suggest-complete`, { method: 'POST' });
   };
 
-  // 후보 추가 함수
-  const addCandidate = async (restaurant: Restaurant) => {
+  // 카카오 후보 추가 함수
+  const addKakaoCandidate = async (restaurant: any) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates`, {
+      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates/kakao`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: restaurant.name,
-          type: restaurant.category,
-          detail: {
-            description: restaurant.description,
-            rating: restaurant.rating,
-            image: restaurant.image
-          }
+          added_by: participantId || 'web_user',
+          kakao_data: restaurant
         }),
       });
-
       if (response.ok) {
-        showToast(`${restaurant.name}이(가) 후보에 추가되었습니다!`);
+        showToast(`${restaurant.place_name || restaurant.name}이(가) 후보에 추가되었습니다!`);
       } else {
-        showToast('후보 추가에 실패했습니다.');
+        const errorData = await response.json();
+        showToast(`후보 추가에 실패했습니다: ${errorData.detail}`);
       }
     } catch (error) {
-      console.error('후보 추가 오류:', error);
-      showToast('후보 추가 중 오류가 발생했습니다.');
+      console.error('카카오 후보 추가 오류:', error);
+      showToast('카카오 후보 추가 중 오류가 발생했습니다.');
     }
   };
 
@@ -175,38 +192,25 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
     try {
       const response = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates/yogiyo`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          added_by: 'web_user',
+          added_by: participantId || 'web_user',
           yogiyo_data: restaurant
         }),
       });
-
       if (response.ok) {
         showToast(`${restaurant.name}이(가) 후보에 추가되었습니다!`);
-        // 후보 등록 후 groupData 갱신
-        const res = await fetch(`${BACKEND_URL}/groups/${groupId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setGroupData(data);
-        }
       } else {
-        showToast('후보 추가에 실패했습니다.');
+        const errorData = await response.json();
+        showToast(`후보 추가 실패: ${errorData.detail}`);
       }
     } catch (error) {
       console.error('요기요 후보 추가 오류:', error);
-      showToast('후보 추가 중 오류가 발생했습니다.');
+      showToast('요기요 후보 추가 중 오류가 발생했습니다.');
     }
   };
 
-  // 이미 등록된 요기요 후보 id 목록 추출
-  const registeredYogiyoIds = groupData?.candidates
-    ? Object.values(groupData.candidates)
-        .filter((c: any) => c.type === 'yogiyo' && c.detail && c.detail.yogiyo_id)
-        .map((c: any) => c.detail.yogiyo_id)
-    : [];
+  // --- 기존의 ID 목록 추출 로직은 실시간 리스너로 대체되었으므로 모두 삭제 ---
 
   if (!groupData) {
     return (
@@ -382,7 +386,8 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
           <DirectTab 
             groupData={groupData}
             groupId={groupId}
-            onAddCandidate={addCandidate}
+            onAddCandidate={addKakaoCandidate}
+            registeredCandidateIds={registeredKakaoIds}
           />
         )}
         
