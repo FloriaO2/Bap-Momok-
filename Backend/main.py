@@ -13,11 +13,13 @@ import json
 import random
 import string
 import requests
-import threading  # 추가: threading 모듈 임포트
+from itertools import combinations
+import threading
 from firebase_admin import db
 
 # 전역 락 객체 생성
 vote_lock = threading.Lock()
+global_lock = threading.Lock()
 
 # import os
 # from dotenv import load_dotenv
@@ -101,51 +103,50 @@ def get_group_by_id(group_id: str):
 
 @app.post("/groups")
 def create_new_group(group_create: GroupCreate):
-    """새로운 그룹 데이터를 생성합니다."""
-    try:
-        group_id, created_group = create_group(group_create)
-        return {
-            "message": "그룹이 성공적으로 생성되었습니다",
-            "group_id": group_id,
-            "data": created_group
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"그룹 생성 중 오류가 발생했습니다: {str(e)}")
+    with global_lock:
+        try:
+            group_id, created_group = create_group(group_create)
+            return {
+                "message": "그룹이 성공적으로 생성되었습니다",
+                "group_id": group_id,
+                "data": created_group
+            }
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"그룹 생성 중 오류가 발생했습니다: {str(e)}")
 
 @app.put("/groups/{group_id}")
 def update_existing_group(group_id: str, group_update: GroupUpdate):
-    """기존 그룹 데이터를 업데이트합니다."""
-    updated_group = update_group(group_id, group_update)
-    if updated_group is None:
-        raise HTTPException(status_code=404, detail="업데이트할 그룹을 찾을 수 없습니다")
-    
-    return {
-        "message": "그룹이 성공적으로 업데이트되었습니다",
-        "group_id": group_id,
-        "data": updated_group
-    }
+    with global_lock:
+        updated_group = update_group(group_id, group_update)
+        if updated_group is None:
+            raise HTTPException(status_code=404, detail="업데이트할 그룹을 찾을 수 없습니다")
+        return {
+            "message": "그룹이 성공적으로 업데이트되었습니다",
+            "group_id": group_id,
+            "data": updated_group
+        }
 
 @app.delete("/groups/{group_id}")
 def delete_existing_group(group_id: str):
-    """그룹 데이터를 삭제합니다."""
-    success = delete_group(group_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="삭제할 그룹을 찾을 수 없습니다")
-    
-    return {"message": "그룹이 성공적으로 삭제되었습니다", "group_id": group_id}
+    with global_lock:
+        success = delete_group(group_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="삭제할 그룹을 찾을 수 없습니다")
+        return {"message": "그룹이 성공적으로 삭제되었습니다", "group_id": group_id}
 
 # 새로운 전체 데이터 구조 API 엔드포인트들
 # /health, /upload, /data 관련 엔드포인트 모두 삭제
 
 @app.post("/groups/{group_id}/candidates")
 def add_candidate(group_id: str, candidate: Candidate):
-    group = get_group(group_id)
-    if group is None:
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    candidate_id = get_next_candidate_id(group)
-    group.candidates[candidate_id] = candidate
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+    with global_lock:
+        group = get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        candidate_id = get_next_candidate_id(group)
+        group.candidates[candidate_id] = candidate
+        update_group(group_id, GroupUpdate(data=group))
+        return {"message": "후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
 @app.post("/groups/{group_id}/candidates/kakao")
 def add_kakao_candidate(
@@ -153,24 +154,25 @@ def add_kakao_candidate(
     added_by: str = Body(...),
     kakao_data: dict = Body(...)
 ):
-    group = get_group(group_id)
-    if group is None:
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    candidate_id = get_next_candidate_id(group)
-    detail = {
-        "addr": kakao_data.get("address_name"),
-        "category": kakao_data.get("category_name"),
-        "kakao_id": kakao_data.get("id")
-    }
-    candidate = Candidate(
-        added_by=added_by,
-        name=kakao_data.get("place_name", ""),
-        type="kakao",
-        detail=detail
-    )
-    group.candidates[candidate_id] = candidate
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "카카오 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+    with global_lock:
+        group = get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        candidate_id = get_next_candidate_id(group)
+        detail = {
+            "addr": kakao_data.get("address_name"),
+            "category": kakao_data.get("category_name"),
+            "kakao_id": kakao_data.get("id")
+        }
+        candidate = Candidate(
+            added_by=added_by,
+            name=kakao_data.get("place_name", ""),
+            type="kakao",
+            detail=detail
+        )
+        group.candidates[candidate_id] = candidate
+        update_group(group_id, GroupUpdate(data=group))
+        return {"message": "카카오 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
 @app.post("/groups/{group_id}/candidates/yogiyo")
 def add_yogiyo_candidate(
@@ -178,24 +180,25 @@ def add_yogiyo_candidate(
     added_by: str = Body(...),
     yogiyo_data: dict = Body(...)
 ):
-    group = get_group(group_id)
-    if group is None:
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    candidate_id = get_next_candidate_id(group)
-    detail = {
-        "category": yogiyo_data.get("categories", []),
-        "delivery_time": yogiyo_data.get("estimated_delivery_time"),
-        "yogiyo_id": yogiyo_data.get("id")
-    }
-    candidate = Candidate(
-        added_by=added_by,
-        name=yogiyo_data.get("name", ""),
-        type="yogiyo",
-        detail=detail
-    )
-    group.candidates[candidate_id] = candidate
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "요기요 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+    with global_lock:
+        group = get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        candidate_id = get_next_candidate_id(group)
+        detail = {
+            "category": yogiyo_data.get("categories", []),
+            "delivery_time": yogiyo_data.get("estimated_delivery_time"),
+            "yogiyo_id": yogiyo_data.get("id")
+        }
+        candidate = Candidate(
+            added_by=added_by,
+            name=yogiyo_data.get("name", ""),
+            type="yogiyo",
+            detail=detail
+        )
+        group.candidates[candidate_id] = candidate
+        update_group(group_id, GroupUpdate(data=group))
+        return {"message": "요기요 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
 @app.post("/groups/{group_id}/candidates/custom")
 def add_custom_candidate(
@@ -205,27 +208,28 @@ def add_custom_candidate(
     URL: str = Body(...),
     detail_text: str = Body(...)
 ):
-    group = get_group(group_id)
-    if group is None:
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    candidate_id = get_next_candidate_id(group)
-    detail = {
-        "URL": URL,
-        "detail": detail_text
-    }
-    candidate = Candidate(
-        added_by=added_by,
-        name=name,
-        type="custom",
-        detail=detail
-    )
-    group.candidates[candidate_id] = candidate
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "커스텀 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
+    with global_lock:
+        group = get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        candidate_id = get_next_candidate_id(group)
+        detail = {
+            "URL": URL,
+            "detail": detail_text
+        }
+        candidate = Candidate(
+            added_by=added_by,
+            name=name,
+            type="custom",
+            detail=detail
+        )
+        group.candidates[candidate_id] = candidate
+        update_group(group_id, GroupUpdate(data=group))
+        return {"message": "커스텀 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
 @app.post("/groups/{group_id}/votes/{user_id}")
 def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
-    with vote_lock:
+    with global_lock:
         try:
             group = get_group(group_id)
             if group is None:
@@ -240,49 +244,49 @@ def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
             prev_vote = group.votes.get(user_id, {})
             prev_vote.update(vote)
             group.votes[user_id] = prev_vote
-            
+            print(f"[add_or_update_vote] votes after update: {group.votes}")
             update_candidate_vote_counts(group)
+            print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
             group.calculate_ranks()
-            
+            print(f"[add_or_update_vote] candidates after rank calculation: {group.candidates}")
             participant = group.participants.get(user_id)
             if participant:
                 participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
-
+                print(f"[add_or_update_vote] participant {user_id} voted_count: {participant.voted_count}")
             update_group(group_id, GroupUpdate(data=group))
-            return {"message": "투표가 성공적으로 기록되었습니다"}
-
+            return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
         except Exception as e:
             print(f"🚨 투표 처리 중 오류 발생: {e}")
-            # 클라이언트에는 이미 응답을 보냈으므로, 여기서는 서버 로그만 남깁니다.
-            # 실제 프로덕션에서는 더 정교한 에러 로깅/모니터링 시스템을 사용하는 것이 좋습니다.
             raise HTTPException(status_code=500, detail="서버 내부 오류")
 
 @app.post("/groups/{group_id}/participants")
 def join_group(group_id: str, join: ParticipantJoin):
-    group = get_group(group_id)
-    if group is None:
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    participant_id = generate_random_id()
-    participant = Participant(
-        nickname=join.nickname,
-        suggest_complete=False,
-        vote_complete=False
-    )
-    group.participants[participant_id] = participant
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "참가자가 성공적으로 추가되었습니다", "participant_id": participant_id, "data": group}
+    with global_lock:
+        group = get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        participant_id = generate_random_id()
+        participant = Participant(
+            nickname=join.nickname,
+            suggest_complete=False,
+            vote_complete=False
+        )
+        group.participants[participant_id] = participant
+        update_group(group_id, GroupUpdate(data=group))
+        return {"message": "참가자가 성공적으로 추가되었습니다", "participant_id": participant_id, "data": group}
 
 @app.post("/groups/{group_id}/participants/{participant_id}/suggest-complete")
 def set_suggest_complete(group_id: str, participant_id: str):
-    group = get_group(group_id)
-    if group is None:
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    participant = group.participants.get(participant_id)
-    if participant is None:
-        raise HTTPException(status_code=404, detail="참가자를 찾을 수 없습니다")
-    participant.suggest_complete = True
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "제안 완료 처리됨", "participant_id": participant_id}
+    with global_lock:
+        group = get_group(group_id)
+        if group is None:
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        participant = group.participants.get(participant_id)
+        if participant is None:
+            raise HTTPException(status_code=404, detail="참가자를 찾을 수 없습니다")
+        participant.suggest_complete = True
+        update_group(group_id, GroupUpdate(data=group))
+        return {"message": "제안 완료 처리됨", "participant_id": participant_id}
 
 @app.get("/groups/{group_id}/results")
 def get_voting_results(group_id: str):
@@ -370,3 +374,57 @@ def check_vote_complete(group_id: str, participant_id: str):
     candidates = group_data.get("candidates", {})
     candidate_count = len(candidates)
     return {"vote_complete": voted_count == candidate_count}
+
+@app.get("/groups/{group_id}/best_couple")
+def get_best_couple(group_id: str):
+    group = get_group(group_id)
+    if group is None:
+        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+    if not group.candidates or not group.votes or not group.participants:
+        raise HTTPException(status_code=404, detail="후보, 참가자, 투표 정보가 부족합니다")
+
+    candidate_ids = list(group.candidates.keys())
+    num_candidates = len(candidate_ids)
+    if num_candidates < 2:
+        raise HTTPException(status_code=400, detail="후보가 2명 이상이어야 합니다")
+
+    # 투표값을 벡터로 변환
+    vote_map = {"good": 1, "soso": 0, "bad": -1, "never": -2}
+    participant_vectors = {}
+    for pid, vote_dict in group.votes.items():
+        vec = []
+        for cid in candidate_ids:
+            v = vote_dict.get(cid, None)
+            if v is None:
+                vec.append(0)
+            else:
+                vec.append(vote_map.get(v, 0))
+        # 벡터 길이 체크: 후보 개수와 다르면 무시
+        if len(vec) == num_candidates and sum([1 for cid in candidate_ids if cid in vote_dict]) == num_candidates:
+            participant_vectors[pid] = vec
+    if len(participant_vectors) < 2:
+        return {"best_couple": [], "best_couple_ids": [], "max_inner_product": None}
+
+    # nC2 쌍에 대해 내적 계산
+    max_score = None
+    best_pair = None
+    for (pid1, vec1), (pid2, vec2) in combinations(participant_vectors.items(), 2):
+        inner = sum([a*b for a, b in zip(vec1, vec2)])
+        if (max_score is None) or (inner > max_score):
+            max_score = inner
+            best_pair = (pid1, pid2)
+    if best_pair is None:
+        return {"best_couple": [], "best_couple_ids": [], "max_inner_product": None}
+    # 닉네임 추출 (Participant 객체가 아닐 수도 있으니 dict도 처리)
+    def get_nickname(pid):
+        p = group.participants.get(pid)
+        if p is None:
+            return pid
+        if hasattr(p, 'nickname'):
+            return p.nickname
+        if isinstance(p, dict) and 'nickname' in p:
+            return p['nickname']
+        return pid
+    nickname1 = get_nickname(best_pair[0])
+    nickname2 = get_nickname(best_pair[1])
+    return {"best_couple": [nickname1, nickname2], "best_couple_ids": list(best_pair), "max_inner_product": max_score}
