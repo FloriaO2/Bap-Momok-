@@ -261,18 +261,20 @@ export default function HomePage() {
                 }
               }}
             />
-            <button
-              className={styles.modalButton}
-              onClick={() => joinRoom(joinRoomInput)}
-            >
-              참여
-            </button>
-            <button
-              className={styles.modalButton}
-              onClick={closeJoinModal}
-            >
-              취소
-            </button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '16px' }}>
+              <button
+                className={styles.modalButton}
+                onClick={() => joinRoom(joinRoomInput)}
+              >
+                참여
+              </button>
+              <button
+                className={styles.modalButton}
+                onClick={closeJoinModal}
+              >
+                취소
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -168,49 +168,55 @@ export default function LiveResultsPage() {
             marginBottom: "30px",
             textAlign: "center"
           }}>
-            🏆 투표 결과
+            🏆 투표 결과 🏆
           </h1>
-          <AnimatePresence>
-            {candidates.map((c, idx) => (
-              <motion.div
-                key={c.id}
-                layout
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                style={{
-                  background: idx < 3 ? medalColors[idx] : "#fff",
-                  borderRadius: 12,
-                  marginBottom: 16,
-                  padding: 20,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  color: "#222"
-                }}
-              >
-                <div style={{ fontSize: 24, fontWeight: "bold", width: 32, textAlign: "center", color: "#222" }}>
-                  {c.rank <= 3 ? (
-                    <span>{medalEmojis[c.rank - 1]}</span>
-                  ) : (
-                    c.rank
-                  )}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: "#222" }}>{c.name}</div>
-                  <div style={{ fontSize: 14, color: "#888", display: 'flex', gap: '12px', marginTop: '4px' }}>
-                    <VoteDisplay candidateId={c.id} option="good" emoji="👍" count={c.good || 0} />
-                    <VoteDisplay candidateId={c.id} option="soso" emoji="👌" count={c.soso || 0} />
-                    <VoteDisplay candidateId={c.id} option="bad" emoji="👎" count={c.bad || 0} />
-                    <VoteDisplay candidateId={c.id} option="never" emoji="🚫" count={c.never || 0} />
+          {candidates.length === 0 ? (
+            <div style={{ color: "#888", fontSize: "20px", fontWeight: "bold", textAlign: "center", padding: "60px 0" }}>
+              후보가 없습니다.
+            </div>
+          ) : (
+            <AnimatePresence>
+              {candidates.map((c, idx) => (
+                <motion.div
+                  key={c.id}
+                  layout
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -30 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  style={{
+                    background: idx < 3 ? medalColors[idx] : "#fff",
+                    borderRadius: 12,
+                    marginBottom: 16,
+                    padding: 20,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    color: "#222"
+                  }}
+                >
+                  <div style={{ fontSize: 24, fontWeight: "bold", width: 32, textAlign: "center", color: "#222" }}>
+                    {c.rank <= 3 ? (
+                      <span>{medalEmojis[c.rank - 1]}</span>
+                    ) : (
+                      c.rank
+                    )}
                   </div>
-                </div>
-                <div style={{ fontSize: 16, color: "#994d52", fontWeight: 700 }}>점수: {c.score}</div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 18, fontWeight: 600, color: "#222" }}>{c.name}</div>
+                    <div style={{ fontSize: 14, color: "#888", display: 'flex', gap: '12px', marginTop: '4px' }}>
+                      <VoteDisplay candidateId={c.id} option="good" emoji="👍" count={c.good || 0} />
+                      <VoteDisplay candidateId={c.id} option="soso" emoji="👌" count={c.soso || 0} />
+                      <VoteDisplay candidateId={c.id} option="bad" emoji="👎" count={c.bad || 0} />
+                      <VoteDisplay candidateId={c.id} option="never" emoji="🚫" count={c.never || 0} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 16, color: "#994d52", fontWeight: 700 }}>점수: {c.score}</div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
           {/* 하단 홈으로 가기 버튼 */}
           <div style={{ marginTop: "30px", textAlign: "center", display: "flex", gap: "15px", justifyContent: "center" }}>
             <button

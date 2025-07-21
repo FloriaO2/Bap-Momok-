@@ -238,6 +238,8 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
         participantId={participantId}
         router={router}
         timeLeft={timeLeft}
+        start_votingtime={groupData?.start_votingtime}
+        group_creation_time={groupData?.group_creation_time}
       />
     );
   }

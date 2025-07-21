@@ -76,7 +76,7 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
           marginBottom: "30px",
           textAlign: "center"
         }}>
-          🏆 투표 결과
+          🏆 투표 결과 🏆
         </h1>
 
         {/* Top3 섹션 */}
@@ -160,7 +160,8 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
             overflowY: "auto",
             background: "#f8f9fa",
             borderRadius: "15px",
-            padding: "20px"
+            padding: "20px",
+            textAlign: "center"
           }}>
             {results.all_results && results.all_results.length > 0 ? (
               results.all_results.map((candidate: any, index: number) => (
@@ -201,13 +202,8 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
                 </div>
               ))
             ) : (
-              <div style={{ 
-                textAlign: "center", 
-                color: "#999", 
-                fontSize: "16px",
-                padding: "40px 0"
-              }}>
-                아직 투표 결과가 없습니다
+              <div style={{ color: "#dc3545", fontSize: "18px", fontWeight: "bold", padding: "40px 0" }}>
+                후보가 없습니다.
               </div>
             )}
           </div>

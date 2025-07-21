@@ -6,6 +6,23 @@ import TinderCard from 'react-tinder-card';
 import styles from './tinder.module.css';
 import { Suspense } from 'react';
 
+const getEmojiForCandidate = (candidate: any): string => {
+  if (candidate.type === 'custom') {
+    return '🍽️';
+  }
+
+  const category = candidate.detail?.category || '';
+
+  if (category.includes('피자') || category.includes('이탈리안')) return '🍕';
+  if (category.includes('치킨')) return '🍗';
+  if (category.includes('중국집') || category.includes('중식')) return '🥡';
+  if (category.includes('일식') || category.includes('돈까스') || category.includes('초밥')) return '🍣';
+  if (category.includes('한식')) return '🍚';
+  if (category.includes('카페') || category.includes('디저트')) return '☕️';
+  
+  return '🍽️'; // 기본값
+};
+
 function TinderPageContent() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [candidates, setCandidates] = useState<any[]>([]);
@@ -105,6 +122,11 @@ function TinderPageContent() {
 
   // 3초 후 자동 이동 (모든 카드 스와이프 시)
   useEffect(() => {
+    if (!loading && candidates.length === 0 && groupId) {
+      // 후보가 하나도 없으면 바로 live-results로 이동
+      window.location.href = `/live-results/${groupId}`;
+      return;
+    }
     if (!loading && currentCardIndex >= candidates.length && groupId) {
       const timeout = setTimeout(() => {
         window.location.href = `/live-results/${groupId}`;
@@ -128,6 +150,10 @@ function TinderPageContent() {
   }
 
   // 카드가 끝났을 때 또는 후보가 아예 없을 때
+  if (candidates.length === 0) {
+    // 후보가 없으면 아무 메시지도 띄우지 않고 바로 이동
+    return null;
+  }
   if (currentCardIndex >= candidates.length) {
     return (
       <div className={styles.container}>
@@ -185,8 +211,7 @@ function TinderPageContent() {
             >
               <div className={styles.card}>
                 <div className={styles.cardEmoji}>
-                  {currentCandidate.type === 'kakao' ? '🏪' : 
-                   currentCandidate.type === 'yogiyo' ? '🍕' : '🍽️'}
+                  {getEmojiForCandidate(currentCandidate)}
                 </div>
                 <div className={styles.cardName}>{currentCandidate.name}</div>
                 <div className={styles.cardType}>
@@ -244,50 +269,6 @@ function TinderPageContent() {
             display: 'flex',
             gap: '10px'
           }}>
-            <button 
-              onClick={() => { 
-                if (groupId) {
-                  window.location.href = `/live-results/${groupId}`;
-                } else {
-                  alert('groupId가 없습니다!');
-                }
-              }}
-              style={{
-                background: '#28a745',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)'
-              }}
-            >
-              실시간 결과
-            </button>
-            <button 
-              onClick={() => {
-                if (groupId) {
-                  window.location.href = `/live-results/${groupId}`;
-                } else {
-                  alert('groupId가 없습니다!');
-                }
-              }}
-              style={{
-                background: '#dc3545',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(220, 53, 69, 0.3)'
-              }}
-            >
-              최종 결과
-            </button>
           </div>
         </div>
       </div>
