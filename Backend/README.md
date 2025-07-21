@@ -63,8 +63,7 @@ POST /data
       "participants": {
         "participant_1": {
           "nickname": "재호",
-          "suggest_complete": false,
-          "vote_complete": false
+          "suggest_complete": false
         }
       },
       "start_votingtime": "2025-07-19T18:30:00",
@@ -128,8 +127,7 @@ POST /groups
     "participants": {
       "participant_1": {
         "nickname": "재호",
-        "suggest_complete": false,
-        "vote_complete": false
+        "suggest_complete": false
       }
     },
     "start_votingtime": "2025-07-19T18:30:00",
@@ -181,8 +179,7 @@ PUT /groups/{group_id}
     "participants": {
       "participant_1": {
         "nickname": "재호",
-        "suggest_complete": true,
-        "vote_complete": false
+        "suggest_complete": true
       }
     },
     "start_votingtime": "2025-07-19T18:30:00",
@@ -223,7 +220,6 @@ GET /health
 ### Participant (참가자)
 - `nickname`: 닉네임
 - `suggest_complete`: 제안 완료 여부
-- `vote_complete`: 투표 완료 여부
 
 ### GroupData (그룹 데이터)
 - `candidates`: 후보 음식점 목록

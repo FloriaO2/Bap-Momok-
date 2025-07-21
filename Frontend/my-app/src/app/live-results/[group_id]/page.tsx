@@ -18,18 +18,6 @@ export default function LiveResultsPage() {
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   useEffect(() => {
-    // live-results 진입 시 vote_complete를 true로 강제 변경
-    const participantId = typeof window !== 'undefined' ? sessionStorage.getItem(`participant_id_${groupId}`) : null;
-    if (groupId && participantId) {
-      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/groups/${groupId}/participants/${participantId}/vote-complete`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vote_complete: true })
-      });
-    }
-  }, [groupId]);
-
-  useEffect(() => {
     if (!groupId) return;
     // 후보 실시간 업데이트 (Firebase)
     const candidatesRef = ref(database, `groups/${groupId}/candidates`);

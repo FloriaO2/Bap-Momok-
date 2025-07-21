@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from models import GroupCreate, GroupUpdate, GroupData, GroupsData, Candidate, Vote, ParticipantJoin, Participant
 from database import (
     create_group, get_group, update_group, delete_group, get_all_groups,
-    get_groups_data, create_groups_data, update_groups_data, update_participant_vote_complete
+    get_groups_data, create_groups_data, update_groups_data
 )
 from firebase_config import initialize_firebase
 from typing import Dict, Optional
@@ -268,13 +268,6 @@ def set_suggest_complete(group_id: str, participant_id: str):
     participant.suggest_complete = True
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "제안 완료 처리됨", "participant_id": participant_id}
-
-@app.patch("/groups/{group_id}/participants/{participant_id}/vote-complete")
-def update_vote_complete(group_id: str, participant_id: str, vote_complete: bool = Body(...)):
-    success = update_participant_vote_complete(group_id, participant_id, vote_complete)
-    if not success:
-        raise HTTPException(status_code=500, detail="vote_complete 업데이트 실패")
-    return {"message": "vote_complete가 성공적으로 업데이트되었습니다"}
 
 @app.get("/groups/{group_id}/results")
 def get_voting_results(group_id: str):

@@ -106,11 +106,4 @@ def update_groups_data(groups_data: GroupsData) -> GroupsData:
     except Exception as e:
         raise Exception(f"Firebase 전체 데이터 업데이트 중 오류: {str(e)}") 
 
-def update_participant_vote_complete(group_id: str, participant_id: str, vote_complete: bool) -> bool:
-    try:
-        db = get_database()
-        db.child('groups').child(group_id).child('participants').child(participant_id).update({'vote_complete': vote_complete})
-        return True
-    except Exception as e:
-        print(f"vote_complete partial update error: {str(e)}")
-        return False 
+# vote_complete 관련 함수, 로직, 주석 전체 삭제 
