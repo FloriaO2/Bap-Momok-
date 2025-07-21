@@ -64,6 +64,14 @@ export default function LiveResultsPage() {
 
   console.log("candidates state:", candidates);
 
+  const medalColors = [
+    'linear-gradient(90deg, #FFD700 0%, #FFEF8A 100%)', // 금
+    'linear-gradient(90deg, #C0C0C0 0%, #E0E0E0 100%)', // 은
+    'linear-gradient(90deg, #CD7F32 0%, #E3B778 100%)', // 동
+  ];
+
+  const medalEmojis = ['🥇', '🥈', '🥉'];
+
   return (
     <>
       <style>{`
@@ -76,48 +84,95 @@ export default function LiveResultsPage() {
         }
       `}</style>
       <div style={{ 
-        maxWidth: 500, 
-        margin: "0 auto", 
-        padding: 24,
-        minHeight: "100vh",
+        minHeight: "100vh", 
         background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        padding: "20px",
         fontFamily: "Arial, sans-serif"
       }}>
-        <h2 className="live-title-strong" style={{ textAlign: "center", marginBottom: 24 }}>
-          실시간 투표 순위
-        </h2>
-        <AnimatePresence>
-          {candidates.map((c) => (
-            <motion.div
-              key={c.id}
-              layout
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              style={{
-                background: "#fff",
-                borderRadius: 12,
-                marginBottom: 16,
-                padding: 20,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                color: "#222"
+        <div style={{ 
+          maxWidth: "600px", 
+          margin: "0 auto", 
+          background: "#fff", 
+          borderRadius: "20px", 
+          padding: "30px", 
+          boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+        }}>
+          {/* 제목 */}
+          <h1 style={{ 
+            fontSize: "32px", 
+            fontWeight: "bold", 
+            color: "#333", 
+            marginBottom: "30px",
+            textAlign: "center"
+          }}>
+            🏆 투표 결과
+          </h1>
+          <AnimatePresence>
+            {candidates.map((c, idx) => (
+              <motion.div
+                key={c.id}
+                layout
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                style={{
+                  background: idx < 3 ? medalColors[idx] : "#fff",
+                  borderRadius: 12,
+                  marginBottom: 16,
+                  padding: 20,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  color: "#222"
+                }}
+              >
+                <div style={{ fontSize: 24, fontWeight: "bold", width: 32, textAlign: "center", color: "#222" }}>
+                  {c.rank <= 3 ? (
+                    <span>{medalEmojis[c.rank - 1]}</span>
+                  ) : (
+                    c.rank
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: "#222" }}>{c.name}</div>
+                  <div style={{ fontSize: 14, color: "#888" }}>
+                    👍 {c.good || 0} / 👌 {c.soso || 0} / 👎 {c.bad || 0} / 🚫 {c.never || 0}
+                  </div>
+                </div>
+                <div style={{ fontSize: 16, color: "#994d52", fontWeight: 700 }}>점수: {c.score}</div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {/* 하단 홈으로 가기 버튼 */}
+          <div style={{ marginTop: "30px", textAlign: "center", display: "flex", gap: "15px", justifyContent: "center" }}>
+            <button
+              onClick={() => window.location.href = '/'}
+              style={{ 
+                background: "#dc3545", 
+                color: "#fff", 
+                border: "none", 
+                borderRadius: "25px", 
+                padding: "12px 24px", 
+                fontSize: "16px", 
+                fontWeight: "bold", 
+                cursor: "pointer",
+                transition: "all 0.3s ease"
+              }}
+              onMouseOver={e => {
+                e.currentTarget.style.background = "#c82333";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.background = "#dc3545";
+                e.currentTarget.style.transform = "translateY(0)";
               }}
             >
-              <div style={{ fontSize: 24, fontWeight: "bold", width: 32, textAlign: "center", color: "#222" }}>{c.rank}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 600, color: "#222" }}>{c.name}</div>
-                <div style={{ fontSize: 14, color: "#888" }}>
-                  👍 {c.good || 0} / 😐 {c.soso || 0} / 👎 {c.bad || 0} / 🚫 {c.never || 0}
-                </div>
-              </div>
-              <div style={{ fontSize: 16, color: "#994d52", fontWeight: 700 }}>점수: {c.score}</div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              홈으로 가기
+            </button>
+          </div>
+        </div>
       </div>
     </>
   );

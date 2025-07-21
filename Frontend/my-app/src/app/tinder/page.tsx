@@ -142,6 +142,16 @@ function TinderPageContent() {
     }
   }, [groupId, currentCardIndex, candidates.length]);
 
+  // 3초 후 자동 이동 useEffect는 항상 호출
+  useEffect(() => {
+    if (!loading && currentCardIndex >= candidates.length && groupId) {
+      const timer = setTimeout(() => {
+        router.push(`/live-results/${groupId}`);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, currentCardIndex, candidates.length, groupId, router]);
+
   if (loading) {
     return (
       <div className={styles.container}>
@@ -156,7 +166,6 @@ function TinderPageContent() {
     );
   }
 
-  // 카드가 끝났을 때 또는 후보가 아예 없을 때
   if (currentCardIndex >= candidates.length) {
     return (
       <div className={styles.container}>
@@ -169,36 +178,7 @@ function TinderPageContent() {
           <div className={styles.overlay}>
             <div className={styles.completionContainer}>
               <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
-              <p className={styles.completionText}>투표가 완료되었습니다.</p>
-              <div className={styles.completionButtons}>
-                <button 
-                  className={styles.completionButton}
-                  onClick={() => { 
-                    if (groupId) {
-                      window.location.href = `/live-results/${groupId}`;
-                    } else {
-                      alert('groupId가 없습니다!');
-                    }
-                  }}
-                  style={{ background: '#28a745' }}
-                >
-                  실시간 결과
-                </button>
-                <button 
-                  className={styles.completionButton}
-                  onClick={viewResults}
-                  style={{ background: '#dc3545' }}
-                >
-                  최종 결과
-                </button>
-                {/* 참여 화면으로 버튼 제거 */}
-                <button 
-                  className={styles.completionButton}
-                  onClick={goHome}
-                >
-                  홈으로
-                </button>
-              </div>
+              <p className={styles.completionText}>투표가 완료되었습니다.<br/>잠시후 실시간 결과 화면으로 이동합니다.</p>
             </div>
           </div>
         </div>
@@ -265,25 +245,27 @@ function TinderPageContent() {
             </TinderCard>
           </div>
           
-          {/* 방향 안내 */}
-          <div className={styles.directionContainer}>
-            <div className={styles.directionRow}>
-              <div className={styles.directionItem}>
-                <span className={styles.directionText}>⬆️ 쏘쏘</span>
-              </div>
+          {/* 방향 안내 - 십자가(크로스) 형태 */}
+          <div className={styles.directionContainer} style={{ gap: 0, marginTop: 60 }}>
+            {/* 위쪽(⬆️/쏘쏘) */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', marginBottom: 2 }}>
+              <div className={styles.directionText} style={{ fontSize: 13, lineHeight: 1 }}>⬆️</div>
+              <div className={styles.directionText} style={{ marginTop: 0 }}>쏘쏘</div>
             </div>
-            <div className={styles.directionRow}>
-              <div className={styles.directionItem}>
+            {/* 가운데(좌/우) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 160, margin: '0 auto', marginBottom: 2, gap: 0 }}>
+              <div className={styles.directionItem} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                 <span className={styles.directionText}>⬅️ 싫어요</span>
               </div>
-              <div className={styles.directionItem}>
+              <div style={{ flex: 0.2 }}></div>
+              <div className={styles.directionItem} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                 <span className={styles.directionText}>좋아요 ➡️</span>
               </div>
             </div>
-            <div className={styles.directionRow}>
-              <div className={styles.directionItem}>
-                <span className={styles.directionText}>절대 안돼 ⬇️</span>
-              </div>
+            {/* 아래쪽(절대 안돼/⬇️) */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
+              <div className={styles.directionText} style={{ marginBottom: 0 }}>절대 안돼</div>
+              <div className={styles.directionText} style={{ fontSize: 13, lineHeight: 1 }}>⬇️</div>
             </div>
           </div>
           
@@ -302,44 +284,6 @@ function TinderPageContent() {
             display: 'flex',
             gap: '10px'
           }}>
-            <button 
-              onClick={() => { 
-                if (groupId) {
-                  window.location.href = `/live-results/${groupId}`;
-                } else {
-                  alert('groupId가 없습니다!');
-                }
-              }}
-              style={{
-                background: '#28a745',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)'
-              }}
-            >
-              실시간 결과
-            </button>
-            <button 
-              onClick={viewResults}
-              style={{
-                background: '#dc3545',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(220, 53, 69, 0.3)'
-              }}
-            >
-              최종 결과
-            </button>
           </div>
         </div>
       </div>

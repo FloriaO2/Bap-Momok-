@@ -53,7 +53,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
           setTimeLeft("투표 종료");
           // 투표 시간이 끝나면 3초 후 결과 화면으로 이동
           setTimeout(() => {
-            window.location.href = `/results/${groupId}`;
+            window.location.href = `/live-results/${groupId}`;
           }, 3000);
         }
       }, 1000);
