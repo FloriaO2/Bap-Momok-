@@ -38,6 +38,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchMode, setSearchMode] = useState<'default' | 'custom'>('default');
   const [isEnd, setIsEnd] = useState(false);
+  const [placeholder, setPlaceholder] = useState("음식점 검색 (예: 이태원 맛집)");
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -255,6 +256,19 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
     }
   };
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 440) {
+        setPlaceholder("음식점 검색");
+      } else {
+        setPlaceholder("음식점 검색 (예: 이태원 맛집)");
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div>
       {/* 지도 표시 */}
@@ -279,49 +293,49 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
       )}
 
       {/* 검색바 */}
-      <div style={{ 
+      <div style={{
+        width: "100%",
+        maxWidth: "100%",
         marginBottom: "20px",
-        position: "relative"
+        position: "relative",
+        padding: "0 8px",
+        boxSizing: "border-box"
       }}>
-        <div style={{
-          display: "flex",
-          gap: "10px"
-        }}>
+        <div style={{ display: "flex", width: "100%" }}>
           <input
             type="text"
-            placeholder="음식점 검색 (예: 이태원 맛집)"
+            placeholder={placeholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={handleKeyPress}
-            style={{ 
+            style={{
               flex: 1,
-              padding: "12px 40px 12px 15px",
+              minWidth: 0,
+              padding: "12px 15px",
               border: "1px solid #e0e0e0",
-              borderRadius: "8px",
+              borderRadius: "8px 0 0 8px",
               fontSize: "16px",
               outline: "none",
               color: "#222",
-              background: "#fff" // 흰 배경
+              background: "#fff",
+              boxSizing: "border-box"
             }}
           />
-          <style>{`
-            input::placeholder {
-              color: #aaa;
-              opacity: 1;
-            }
-          `}</style>
           <button
+            className="responsive-search-btn"
             onClick={() => {
               setSearchMode('custom');
               handleSearch(true, 'custom');
             }}
             disabled={loading}
-            style={{ 
-              padding: "12px 20px",
+            style={{
+              width: "clamp(40px, 18vw, 80px)",
+              minWidth: "40px",
+              maxWidth: "80px",
               background: "#994d52",
               color: "#fff",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "0 8px 8px 0",
               fontSize: "16px",
               fontWeight: "bold",
               cursor: loading ? "not-allowed" : "pointer",
@@ -338,9 +352,9 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
               setShowSearchResults(false);
               setSearchResults([]);
             }}
-            style={{ 
+            style={{
               position: "absolute",
-              right: "120px",
+              right: "15px",
               top: "50%",
               transform: "translateY(-50%)",
               background: "none",
