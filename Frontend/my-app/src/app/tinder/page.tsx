@@ -39,6 +39,9 @@ function TinderPageContent() {
   const searchParams = useSearchParams();
   const groupId = searchParams.get('group_id');
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const [touchStart, setTouchStart] = useState<{x: number, y: number, time: number} | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => { setIsClient(true); }, []);
 
   // 그룹 데이터와 후보들 가져오기
   useEffect(() => {
@@ -162,6 +165,24 @@ function TinderPageContent() {
     }
   };
 
+  // 모바일 tap/swipe 구분용 핸들러
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    setTouchStart({ x: t.clientX, y: t.clientY, time: Date.now() });
+  };
+  const handleTouchEnd = (e: React.TouchEvent, candidate: any) => {
+    if (!touchStart) return;
+    const t = e.changedTouches[0];
+    const dx = Math.abs(t.clientX - touchStart.x);
+    const dy = Math.abs(t.clientY - touchStart.y);
+    const dt = Date.now() - touchStart.time;
+    // 20px 이하 이동, 500ms 이하면 tap으로 간주
+    if (dx < 20 && dy < 20 && dt < 500) {
+      handleCardClick(candidate);
+    }
+    setTouchStart(null);
+  };
+
   const goToParticipate = () => {
     if (groupId) {
       router.push(`/participate/${groupId}`);
@@ -269,35 +290,43 @@ function TinderPageContent() {
           
           {/* 카드 컨테이너 */}
           <div className={styles.cardContainer}>
-            <TinderCard
-              key={currentCandidate.id}
-              onSwipe={(dir) => onSwipe(dir, currentCandidate.id)}
-              onCardLeftScreen={() => onCardLeftScreen(currentCandidate.id)}
-              preventSwipe={[]}
-              swipeThreshold={20}
-              swipeRequirementType="position"
-            >
-              <div className={styles.card} onClick={() => handleCardClick(currentCandidate)} style={{cursor:'pointer'}}>
-                <div className={styles.cardEmoji}>
-                  {getEmojiForCandidate(currentCandidate)}
-                </div>
-                <div className={styles.cardName}>{currentCandidate.name}</div>
-                <div className={styles.cardType}>
-                  {currentCandidate.type === 'kakao' ? '카카오맵' : 
-                   currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
-                </div>
-                {currentCandidate.detail && (
-                  <div className={styles.cardDetail}>
-                    {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
-                      <div>📍 {currentCandidate.detail.addr}</div>
-                    )}
-                    {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
-                      <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}분</div>
-                    )}
+            {isClient && (
+              <TinderCard
+                key={currentCandidate.id}
+                onSwipe={(dir) => onSwipe(dir, currentCandidate.id)}
+                onCardLeftScreen={() => onCardLeftScreen(currentCandidate.id)}
+                preventSwipe={[]}
+                swipeThreshold={20}
+                swipeRequirementType="position"
+              >
+                <div
+                  className={styles.card}
+                  onClick={() => handleCardClick(currentCandidate)}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={e => handleTouchEnd(e, currentCandidate)}
+                  style={{cursor:'pointer'}}
+                >
+                  <div className={styles.cardEmoji}>
+                    {getEmojiForCandidate(currentCandidate)}
                   </div>
-                )}
-              </div>
-            </TinderCard>
+                  <div className={styles.cardName}>{currentCandidate.name}</div>
+                  <div className={styles.cardType}>
+                    {currentCandidate.type === 'kakao' ? '카카오맵' : 
+                     currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
+                  </div>
+                  {currentCandidate.detail && (
+                    <div className={styles.cardDetail}>
+                      {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
+                        <div>📍 {currentCandidate.detail.addr}</div>
+                      )}
+                      {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
+                        <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}분</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </TinderCard>
+            )}
           </div>
           
           {/* 방향 안내 */}
@@ -401,10 +430,10 @@ function TinderPageContent() {
             <button
               onClick={() => setMenuModalOpen(false)}
               style={{
-                position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 24, cursor: "pointer"
+                position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 24, cursor: "pointer", color: '#222'
               }}
             >✕</button>
-            <h3 style={{fontWeight:'bold', marginBottom:16, fontSize:20}}>메뉴</h3>
+            <h3 style={{fontWeight:'bold', marginBottom:16, fontSize:20, color:'#222'}}>메뉴</h3>
             {menuLoading ? (
               <div style={{color:'#999', padding:40}}>메뉴 불러오는 중...</div>
             ) : menuError ? (
