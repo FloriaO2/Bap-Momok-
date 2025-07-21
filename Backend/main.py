@@ -1,4 +1,5 @@
 # main.py
+import os
 from fastapi import FastAPI, HTTPException, UploadFile, File, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from models import GroupCreate, GroupUpdate, GroupData, GroupsData, Candidate, Vote, ParticipantJoin, Participant
@@ -13,6 +14,12 @@ import random
 import string
 import requests
 
+# import os
+# from dotenv import load_dotenv
+# load_dotenv()
+# FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
 app = FastAPI(title="Babmomok API", description="밥모임 API 서버")
 
 # Firebase 초기화
@@ -21,7 +28,10 @@ firebase_initialized = initialize_firebase()
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 실제 프로덕션에서는 특정 도메인만 허용
+    allow_origins=[
+        "http://localhost:3000",
+        "https://bap-momok.vercel.app"
+    ],  # 실제 프로덕션에서는 특정 도메인만 허용
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -38,6 +38,8 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(15);
 
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   // 지도가 준비되면 인스턴스 저장
   const handleMapReady = (mapInstance: any) => {
     mapRef.current = mapInstance;
@@ -193,7 +195,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
       kakao_data: restaurant
     };
     try {
-      const res = await fetch(`http://localhost:8000/groups/${groupId}/candidates/kakao`, {
+      const res = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates/kakao`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)

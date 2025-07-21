@@ -30,6 +30,8 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
   const [showSuggestCompleteScreen, setShowSuggestCompleteScreen] = useState(false);
   const [participantId, setParticipantId] = useState<string | null>(null);
 
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   // 그룹 데이터에서 선택된 옵션 확인
   const hasDelivery = groupData?.delivery;
   const hasOffline = groupData?.offline;
@@ -77,7 +79,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/groups/${groupId}`);
+        const response = await fetch(`${BACKEND_URL}/groups/${groupId}`);
         if (response.ok) {
           const data = await response.json();
           setGroupData(data);
@@ -87,7 +89,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
       }
     };
     fetchGroupData();
-  }, [groupId]);
+  }, [groupId, BACKEND_URL]);
 
   // 투표 시간 계산
   useEffect(() => {
@@ -135,13 +137,13 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
   const handleSuggestComplete = async () => {
     if (!participantId) return;
     setShowSuggestCompleteScreen(true); // 먼저 대기 화면으로 전환
-    await fetch(`http://localhost:8000/groups/${groupId}/participants/${participantId}/suggest-complete`, { method: 'POST' });
+    await fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/suggest-complete`, { method: 'POST' });
   };
 
   // 후보 추가 함수
   const addCandidate = async (restaurant: Restaurant) => {
     try {
-      const response = await fetch(`http://localhost:8000/groups/${groupId}/candidates`, {
+      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +173,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
   // 요기요 후보 추가 함수
   const addYogiyoCandidate = async (restaurant: any) => {
     try {
-      const response = await fetch(`http://localhost:8000/groups/${groupId}/candidates/yogiyo`, {
+      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates/yogiyo`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,7 +187,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
       if (response.ok) {
         showToast(`${restaurant.name}이(가) 후보에 추가되었습니다!`);
         // 후보 등록 후 groupData 갱신
-        const res = await fetch(`http://localhost:8000/groups/${groupId}`);
+        const res = await fetch(`${BACKEND_URL}/groups/${groupId}`);
         if (res.ok) {
           const data = await res.json();
           setGroupData(data);

@@ -13,7 +13,7 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/groups/${groupId}/results`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/groups/${groupId}/results`);
         const data = await response.json();
         setResults(data);
       } catch (error) {

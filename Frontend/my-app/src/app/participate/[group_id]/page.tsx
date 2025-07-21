@@ -95,7 +95,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/groups/${groupId}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/groups/${groupId}`);
         if (response.ok) {
           const data = await response.json();
           setGroupData(data);
@@ -117,7 +117,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
       sessionStorage.setItem("nickname", nickname.trim());
       try {
         const response = await fetch(
-          `http://localhost:8000/groups/${groupId}/participants`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/groups/${groupId}/participants`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -153,7 +153,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
 
   // 링크 복사
   const copyLink = async () => {
-    const inviteUrl = `http://localhost:3000/participate/${groupId}`;
+    const inviteUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`;
     try {
       await navigator.clipboard.writeText(inviteUrl);
       alert("링크가 복사되었습니다!");
@@ -164,7 +164,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
 
   // 공유하기
   const shareLink = async () => {
-    const inviteUrl = `http://localhost:3000/participate/${groupId}`;
+    const inviteUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -383,7 +383,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
               marginBottom: "20px" 
             }}>
               <img 
-                src={generateQRCode(`http://localhost:3000/participate/${groupId}`)}
+                src={generateQRCode(`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`)}
                 alt="QR Code"
                 style={{ 
                   width: "200px", 
@@ -411,7 +411,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
                 flex: 1,
                 textAlign: "left"
               }}>
-                http://localhost:3000/participate/{groupId}
+                ${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/{groupId}
               </span>
               <div style={{ display: "flex", gap: "10px", marginLeft: "10px" }}>
                 <button 
@@ -488,7 +488,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
 
           {/* 제안하러 가기 버튼 */}
           <button
-            onClick={() => window.location.href = `/suggest/${groupId}`}
+            onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/suggest/${groupId}`}
             style={{ 
               background: "#dc3545", 
               color: "#fff", 

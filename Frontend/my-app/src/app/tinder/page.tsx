@@ -15,6 +15,7 @@ function TinderPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const groupId = searchParams.get('group_id');
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   // 그룹 데이터와 후보들 가져오기
   useEffect(() => {
@@ -22,7 +23,7 @@ function TinderPageContent() {
       if (!groupId) return;
       
       try {
-        const response = await fetch(`http://localhost:8000/groups/${groupId}`);
+        const response = await fetch(`${BACKEND_URL}/groups/${groupId}`);
         const data = await response.json();
         setGroupData(data);
         
@@ -53,7 +54,7 @@ function TinderPageContent() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/groups/${groupId}/votes/${participantId}`, {
+      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/votes/${participantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [candidateId]: vote })
@@ -127,7 +128,7 @@ function TinderPageContent() {
       if (!participantId) return;
       const updateVoteComplete = async () => {
         try {
-          await fetch(`http://localhost:8000/groups/${groupId}/participants/${participantId}/vote-complete`, {
+          await fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/vote-complete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ vote_complete: true })

@@ -37,7 +37,8 @@ export default function LiveResultsPage() {
     // 투표 진행률 및 그룹 정보 (백엔드)
     const fetchData = async () => {
       try {
-        const groupResponse = await fetch(`http://localhost:8000/groups/${groupId}`);
+        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+        const groupResponse = await fetch(`${BACKEND_URL}/groups/${groupId}`);
         const groupData = await groupResponse.json();
         setGroupData(groupData);
         // 투표 진행률 계산
