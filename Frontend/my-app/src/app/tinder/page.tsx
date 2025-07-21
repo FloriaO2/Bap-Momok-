@@ -290,43 +290,53 @@ function TinderPageContent() {
           
           {/* 카드 컨테이너 */}
           <div className={styles.cardContainer}>
-            {isClient && (
-              <TinderCard
-                key={currentCandidate.id}
-                onSwipe={(dir) => onSwipe(dir, currentCandidate.id)}
-                onCardLeftScreen={() => onCardLeftScreen(currentCandidate.id)}
-                preventSwipe={[]}
-                swipeThreshold={20}
-                swipeRequirementType="position"
-              >
-                <div
-                  className={styles.card}
+            <div style={{width: 320, margin: '0 auto'}}>
+              <div style={{display:'flex', justifyContent:'center', marginBottom: 12}}>
+                <button
                   onClick={() => handleCardClick(currentCandidate)}
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={e => handleTouchEnd(e, currentCandidate)}
-                  style={{cursor:'pointer'}}
+                  style={{
+                    background: '#fff', color: '#994d52', border: '1px solid #994d52', borderRadius: 8,
+                    fontWeight: 600, fontSize: 14, padding: '6px 14px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                  }}
                 >
-                  <div className={styles.cardEmoji}>
-                    {getEmojiForCandidate(currentCandidate)}
-                  </div>
-                  <div className={styles.cardName}>{currentCandidate.name}</div>
-                  <div className={styles.cardType}>
-                    {currentCandidate.type === 'kakao' ? '카카오맵' : 
-                     currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
-                  </div>
-                  {currentCandidate.detail && (
-                    <div className={styles.cardDetail}>
-                      {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
-                        <div>📍 {currentCandidate.detail.addr}</div>
-                      )}
-                      {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
-                        <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}분</div>
-                      )}
+                  상세정보
+                </button>
+              </div>
+              {isClient && (
+                <TinderCard
+                  key={currentCandidate.id}
+                  onSwipe={(dir) => onSwipe(dir, currentCandidate.id)}
+                  onCardLeftScreen={() => onCardLeftScreen(currentCandidate.id)}
+                  preventSwipe={[]}
+                  swipeThreshold={20}
+                  swipeRequirementType="position"
+                >
+                  <div
+                    className={styles.card}
+                    style={{cursor:'pointer', position:'relative', margin: '0 auto'}}
+                  >
+                    <div className={styles.cardEmoji}>
+                      {getEmojiForCandidate(currentCandidate)}
                     </div>
-                  )}
-                </div>
-              </TinderCard>
-            )}
+                    <div className={styles.cardName}>{currentCandidate.name}</div>
+                    <div className={styles.cardType}>
+                      {currentCandidate.type === 'kakao' ? '카카오맵' : 
+                       currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
+                    </div>
+                    {currentCandidate.detail && (
+                      <div className={styles.cardDetail}>
+                        {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
+                          <div>📍 {currentCandidate.detail.addr}</div>
+                        )}
+                        {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
+                          <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}분</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </TinderCard>
+              )}
+            </div>
           </div>
           
           {/* 방향 안내 */}
