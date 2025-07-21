@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 
 interface DeliveryTabProps {
   groupData: any;
@@ -26,6 +27,10 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
   const [loading, setLoading] = useState(false);
   const [pageNum, setPageNum] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [menuModalOpen, setMenuModalOpen] = useState(false);
+  const [menuList, setMenuList] = useState<{name: string, image: string|null}[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [menuError, setMenuError] = useState<string|null>(null);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -85,6 +90,10 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
   const filteredRestaurants = restaurants.filter((r: any) => {
     return searchTerm === '' || r.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
+  // id 중복 제거
+  const uniqueRestaurants = Array.from(
+    new Map(filteredRestaurants.map(r => [r.id, r])).values()
+  );
   
   // 카테고리 탭 드래그 스크롤 구현
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,6 +114,24 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
     if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft.current - walk;
   };
   const onMouseUp = () => { isDragging.current = false; };
+
+  // 식당 카드 클릭 시 메뉴 모달 오픈
+  const handleCardClick = async (restaurant: YogiyoRestaurant) => {
+    setMenuModalOpen(true);
+    setMenuLoading(true);
+    setMenuError(null);
+    setMenuList([]);
+    try {
+      const res = await fetch(`${BACKEND_URL}/yogiyo-menu/${restaurant.id}`);
+      if (!res.ok) throw new Error("메뉴 정보를 불러올 수 없습니다");
+      const data = await res.json();
+      setMenuList(data.menus || []);
+    } catch (e: any) {
+      setMenuError(e.message || "메뉴 정보를 불러올 수 없습니다");
+    } finally {
+      setMenuLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -197,10 +224,11 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
         ) : (
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              {filteredRestaurants.map((r) => (
+              {uniqueRestaurants.map((r) => (
                 <div
                   key={r.id}
-                  style={{ display: "flex", alignItems: "center", padding: "15px", background: "#f8f9fa", borderRadius: "12px", gap: "15px" }}
+                  style={{ display: "flex", alignItems: "center", padding: "15px", background: "#f8f9fa", borderRadius: "12px", gap: "15px", cursor: 'pointer' }}
+                  onClick={() => handleCardClick(r)}
                 >
                   {/* 썸네일 */}
                   <div style={{ width: "60px", height: "60px", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
@@ -221,7 +249,7 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
                   {/* + 버튼 */}
                   {typeof onAddCandidate === 'function' && (
                     <button
-                      onClick={() => onAddCandidate(r)}
+                      onClick={e => { e.stopPropagation(); onAddCandidate(r); }}
                       disabled={registeredCandidateIds.includes(r.id)}
                       style={{
                         width: "40px",
@@ -281,6 +309,53 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
           </>
         )}
       </div>
+      {/* 메뉴 모달 */}
+      {menuModalOpen && (
+        <div
+          onClick={() => setMenuModalOpen(false)}
+          style={{
+            position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+            background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "#fff", borderRadius: 12, width: "90vw", maxWidth: 500, maxHeight: '80vh', overflowY: 'auto', position: "relative", padding: 24, textAlign: 'center'
+            }}
+          >
+            <button
+              onClick={() => setMenuModalOpen(false)}
+              style={{
+                position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 24, cursor: "pointer"
+              }}
+            >✕</button>
+            <h3 style={{fontWeight:'bold', marginBottom:16, fontSize:20}}>메뉴</h3>
+            {menuLoading ? (
+              <div style={{color:'#999', padding:40}}>메뉴 불러오는 중...</div>
+            ) : menuError ? (
+              <div style={{color:'#e57373', padding:40}}>{menuError}</div>
+            ) : menuList.length === 0 ? (
+              <div style={{color:'#999', padding:40}}>메뉴가 없습니다</div>
+            ) : (
+              <div style={{display:'flex', flexWrap:'wrap', gap:20, justifyContent:'center'}}>
+                {menuList.map((menu, idx) => (
+                  <div key={menu.name + '-' + idx} style={{width:120, textAlign:'center'}}>
+                    {menu.image ? (
+                      <img src={menu.image} alt={menu.name} style={{width:100, height:80, objectFit:'cover', borderRadius:8, marginBottom:8}} />
+                    ) : (
+                      <div style={{width:100, height:80, background:'#eee', borderRadius:8, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', color:'#aaa', fontSize:13}}>
+                        이미지 없음
+                      </div>
+                    )}
+                    <div style={{fontSize:14, color:'#222', fontWeight:500}}>{menu.name}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

@@ -1,6 +1,6 @@
 # main.py
 import os
-from fastapi import FastAPI, HTTPException, UploadFile, File, Body, Query
+from fastapi import FastAPI, HTTPException, UploadFile, File, Body, Query, Path
 from fastapi.middleware.cors import CORSMiddleware
 from models import GroupCreate, GroupUpdate, GroupData, GroupsData, Candidate, Vote, ParticipantJoin, Participant
 from database import (
@@ -358,6 +358,38 @@ def get_yogiyo_restaurants(
         raise HTTPException(status_code=err.response.status_code, detail=f"요기요 API 오류: {err.response.text}")
     except requests.exceptions.RequestException as err:
         # 네트워크 문제 등 기타 요청 관련 예외
+        raise HTTPException(status_code=502, detail=f"요기요 API 호출 실패: {err}")
+
+@app.get("/yogiyo-menu/{restaurant_id}")
+def get_yogiyo_menu_summary(
+    restaurant_id: str = Path(..., description="요기요 식당 ID")
+):
+    """
+    요기요 식당의 상위 메뉴(이미지, 메뉴이름)만 반환합니다.
+    """
+    url = f"https://www.yogiyo.co.kr/api/v1/restaurants/{restaurant_id}/menu/?add_photo_menu=android&add_one_dish_menu=true&order_serving_type=delivery&serving_type=vd"
+    headers = {
+        "Authorization": f"Bearer {YOGIYO_AUTH}",
+        "X-Apisecret": YOGIYO_APISECRET,
+        "X-Apikey": YOGIYO_APIKEY,
+        "User-Agent": "Mozilla/5.0"
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        # 상위 메뉴만 추출 (items의 name, original_image)
+        menu_list = []
+        for section in data:
+            for item in section.get("items", []):
+                menu_list.append({
+                    "name": item.get("name"),
+                    "image": item.get("original_image")
+                })
+        return {"menus": menu_list}
+    except requests.exceptions.HTTPError as err:
+        raise HTTPException(status_code=err.response.status_code, detail=f"요기요 API 오류: {err.response.text}")
+    except requests.exceptions.RequestException as err:
         raise HTTPException(status_code=502, detail=f"요기요 API 호출 실패: {err}")
 
 @app.get("/groups/{group_id}/participants/{participant_id}/vote_complete")

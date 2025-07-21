@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import TinderCard from 'react-tinder-card';
 import styles from './tinder.module.css';
 import { Suspense } from 'react';
+import Image from "next/image";
 
 const getEmojiForCandidate = (candidate: any): string => {
   if (candidate.type === 'custom') {
@@ -28,6 +29,12 @@ function TinderPageContent() {
   const [candidates, setCandidates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupData, setGroupData] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalInfo, setModalInfo] = useState<{ type: string, url: string, label: string } | null>(null);
+  const [menuModalOpen, setMenuModalOpen] = useState(false);
+  const [menuList, setMenuList] = useState<{name: string, image: string|null}[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [menuError, setMenuError] = useState<string|null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const groupId = searchParams.get('group_id');
@@ -112,6 +119,47 @@ function TinderPageContent() {
   // 카드가 화면을 벗어났을 때
   const onCardLeftScreen = (candidateId: string) => {
     console.log(`${candidateId} 카드가 화면을 벗어났습니다.`);
+  };
+
+  // 카드 클릭 시 상세정보/메뉴 모달
+  const handleCardClick = async (candidate: any) => {
+    if (candidate.type === 'kakao' && candidate.detail?.kakao_id) {
+      setModalInfo({
+        type: 'kakao',
+        url: `https://place.map.kakao.com/${candidate.detail.kakao_id}`,
+        label: `카카오@https://place.map.kakao.com/${candidate.detail.kakao_id}`
+      });
+      setModalOpen(true);
+    } else if (candidate.type === 'yogiyo' && candidate.detail?.yogiyo_id) {
+      setMenuModalOpen(true);
+      setMenuLoading(true);
+      setMenuError(null);
+      setMenuList([]);
+      try {
+        const res = await fetch(`${BACKEND_URL}/yogiyo-menu/${candidate.detail.yogiyo_id}`);
+        if (!res.ok) throw new Error("메뉴 정보를 불러올 수 없습니다");
+        const data = await res.json();
+        setMenuList(data.menus || []);
+      } catch (e: any) {
+        setMenuError(e.message || "메뉴 정보를 불러올 수 없습니다");
+      } finally {
+        setMenuLoading(false);
+      }
+    } else if (candidate.type === 'custom' && candidate.detail?.URL) {
+      setModalInfo({
+        type: 'custom',
+        url: candidate.detail.URL,
+        label: `커스텀@${candidate.detail.URL}`
+      });
+      setModalOpen(true);
+    } else {
+      setModalInfo({
+        type: 'etc',
+        url: '',
+        label: candidate.name
+      });
+      setModalOpen(true);
+    }
   };
 
   const goToParticipate = () => {
@@ -229,7 +277,7 @@ function TinderPageContent() {
               swipeThreshold={20}
               swipeRequirementType="position"
             >
-              <div className={styles.card}>
+              <div className={styles.card} onClick={() => handleCardClick(currentCandidate)} style={{cursor:'pointer'}}>
                 <div className={styles.cardEmoji}>
                   {getEmojiForCandidate(currentCandidate)}
                 </div>
@@ -292,6 +340,96 @@ function TinderPageContent() {
           </div>
         </div>
       </div>
+      {/* 상세정보 모달 */}
+      {modalOpen && modalInfo && (
+        <div
+          onClick={() => setModalOpen(false)}
+          style={{
+            position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+            background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "#fff", borderRadius: 12, width: "90vw", maxWidth: 600, height: "80vh", position: "relative", padding: 0, textAlign: 'center', overflow: 'hidden'
+            }}
+          >
+            <button
+              onClick={() => setModalOpen(false)}
+              style={{
+                position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 24, cursor: "pointer", zIndex: 2
+              }}
+            >✕</button>
+            {modalInfo.type === 'kakao' ? (
+              <iframe
+                src={modalInfo.url}
+                style={{ width: "100%", height: "100%", border: "none", borderRadius: 12 }}
+                title="카카오 플레이스"
+              />
+            ) : modalInfo.type === 'yogiyo' ? (
+              <>
+                <div style={{fontWeight:'bold', marginBottom:8}}>요기요</div>
+                <a href={modalInfo.url} target="_blank" rel="noopener noreferrer" style={{color:'#994d52', wordBreak:'break-all'}}>{modalInfo.label}</a>
+              </>
+            ) : modalInfo.type === 'custom' ? (
+              <>
+                <div style={{fontWeight:'bold', marginBottom:8}}>커스텀 링크</div>
+                <a href={modalInfo.url} target="_blank" rel="noopener noreferrer" style={{color:'#994d52', wordBreak:'break-all'}}>{modalInfo.label}</a>
+              </>
+            ) : (
+              <div>{modalInfo.label}</div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* 요기요 메뉴 모달 */}
+      {menuModalOpen && (
+        <div
+          onClick={() => setMenuModalOpen(false)}
+          style={{
+            position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+            background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "#fff", borderRadius: 12, width: "90vw", maxWidth: 500, maxHeight: '80vh', overflowY: 'auto', position: "relative", padding: 24, textAlign: 'center'
+            }}
+          >
+            <button
+              onClick={() => setMenuModalOpen(false)}
+              style={{
+                position: "absolute", top: 10, right: 10, background: "none", border: "none", fontSize: 24, cursor: "pointer"
+              }}
+            >✕</button>
+            <h3 style={{fontWeight:'bold', marginBottom:16, fontSize:20}}>메뉴</h3>
+            {menuLoading ? (
+              <div style={{color:'#999', padding:40}}>메뉴 불러오는 중...</div>
+            ) : menuError ? (
+              <div style={{color:'#e57373', padding:40}}>{menuError}</div>
+            ) : menuList.length === 0 ? (
+              <div style={{color:'#999', padding:40}}>메뉴가 없습니다</div>
+            ) : (
+              <div style={{display:'flex', flexWrap:'wrap', gap:20, justifyContent:'center'}}>
+                {menuList.map((menu, idx) => (
+                  <div key={menu.name + '-' + idx} style={{width:120, textAlign:'center'}}>
+                    {menu.image ? (
+                      <img src={menu.image} alt={menu.name} style={{width:100, height:80, objectFit:'cover', borderRadius:8, marginBottom:8}} />
+                    ) : (
+                      <div style={{width:100, height:80, background:'#eee', borderRadius:8, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', color:'#aaa', fontSize:13}}>
+                        이미지 없음
+                      </div>
+                    )}
+                    <div style={{fontSize:14, color:'#222', fontWeight:500}}>{menu.name}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
