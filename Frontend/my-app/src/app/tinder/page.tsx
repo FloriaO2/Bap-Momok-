@@ -11,7 +11,6 @@ function TinderPageContent() {
   const [candidates, setCandidates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupData, setGroupData] = useState<any>(null);
-  const [userVotes, setUserVotes] = useState<{[key: string]: string}>({});
   const router = useRouter();
   const searchParams = useSearchParams();
   const groupId = searchParams.get('group_id');
@@ -41,34 +40,31 @@ function TinderPageContent() {
     };
     
     fetchGroupData();
-  }, [groupId, router]);
+  }, [groupId]);
 
-  // 투표 제출
-  const submitVote = async (candidateId: string, vote: string) => {
+  // 투표 제출 (비동기 Fire-and-forget)
+  const submitVote = (candidateId: string, vote: string) => {
     if (!groupId) return;
     
     const participantId = sessionStorage.getItem(`participant_id_${groupId}`);
     if (!participantId) {
-      alert('참가자 정보가 없습니다. 다시 참여해주세요.');
+      console.error('참가자 정보가 없습니다. 다시 참여해주세요.');
       return;
     }
 
-    try {
-      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/votes/${participantId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [candidateId]: vote })
-      });
-      
-      if (response.ok) {
-        setUserVotes(prev => ({ ...prev, [candidateId]: vote }));
+    fetch(`${BACKEND_URL}/groups/${groupId}/votes/${participantId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [candidateId]: vote })
+    }).then(response => {
+      if (!response.ok) {
+        console.error('투표 제출에 실패했습니다.');
       } else {
-        alert('투표 제출에 실패했습니다.');
+        console.log(`[${participantId}]님이 [${candidateId}]에 [${vote}] 투표함`);
       }
-    } catch (error) {
+    }).catch(error => {
       console.error('투표 제출 실패:', error);
-      alert('투표 제출에 실패했습니다.');
-    }
+    });
   };
 
   // 카드 스와이프 처리
@@ -101,34 +97,21 @@ function TinderPageContent() {
     console.log(`${candidateId} 카드가 화면을 벗어났습니다.`);
   };
 
-  // 홈으로 돌아가기
-  const goHome = () => {
-    router.push('/');
-  };
-
-  // 결과 보기
-  const viewResults = () => {
-    if (groupId) {
-      router.push(`/results/${groupId}`);
-    }
-  };
-
-  // 참여 화면으로 돌아가기
   const goToParticipate = () => {
     if (groupId) {
       router.push(`/participate/${groupId}`);
     }
   };
 
-  // 3초 후 자동 이동 (중복 이동 방지, Hook 규칙 준수)
+  // 3초 후 자동 이동 (모든 카드 스와이프 시)
   useEffect(() => {
-    if (currentCardIndex >= candidates.length && groupId) {
+    if (!loading && currentCardIndex >= candidates.length && groupId) {
       const timeout = setTimeout(() => {
         window.location.href = `/live-results/${groupId}`;
       }, 3000);
       return () => clearTimeout(timeout);
     }
-  }, [currentCardIndex, candidates.length, groupId, router]);
+  }, [currentCardIndex, candidates.length, groupId, loading]);
 
   if (loading) {
     return (
@@ -284,7 +267,13 @@ function TinderPageContent() {
               실시간 결과
             </button>
             <button 
-              onClick={viewResults}
+              onClick={() => {
+                if (groupId) {
+                  window.location.href = `/live-results/${groupId}`;
+                } else {
+                  alert('groupId가 없습니다!');
+                }
+              }}
               style={{
                 background: '#dc3545',
                 color: '#fff',

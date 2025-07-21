@@ -224,28 +224,37 @@ def add_custom_candidate(
 
 @app.post("/groups/{group_id}/votes/{user_id}")
 def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
-    print(f"[add_or_update_vote] group_id={group_id}, user_id={user_id}, vote={vote}")
-    with vote_lock:  # 락 적용 시작
-        group = get_group(group_id)
-        if group is None:
-            print(f"[add_or_update_vote] 그룹을 찾을 수 없습니다: {group_id}")
-            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-        prev_vote = group.votes.get(user_id, {})
-        prev_vote.update(vote)
-        group.votes[user_id] = prev_vote
-        print(f"[add_or_update_vote] votes after update: {group.votes}")
-        update_candidate_vote_counts(group)
-        print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
-        # 순위 계산 및 업데이트
-        group.calculate_ranks()
-        print(f"[add_or_update_vote] candidates after rank calculation: {group.candidates}")
-        # 참가자 voted_count 업데이트
-        participant = group.participants.get(user_id)
-        if participant:
-            participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
-            print(f"[add_or_update_vote] participant {user_id} voted_count: {participant.voted_count}")
-        update_group(group_id, GroupUpdate(data=group))
-        return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
+    with vote_lock:
+        try:
+            group = get_group(group_id)
+            if group is None:
+                raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+
+            # 투표 내용 로깅
+            candidate_id = list(vote.keys())[0]
+            vote_value = vote[candidate_id]
+            participant_nickname = group.participants.get(user_id, Participant(nickname="알 수 없는 사용자", suggest_complete=False)).nickname
+            print(f"✅ 투표 기록: [{participant_nickname}({user_id})]님이 [{candidate_id}]에 [{vote_value}] 투표함")
+
+            prev_vote = group.votes.get(user_id, {})
+            prev_vote.update(vote)
+            group.votes[user_id] = prev_vote
+            
+            update_candidate_vote_counts(group)
+            group.calculate_ranks()
+            
+            participant = group.participants.get(user_id)
+            if participant:
+                participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
+
+            update_group(group_id, GroupUpdate(data=group))
+            return {"message": "투표가 성공적으로 기록되었습니다"}
+
+        except Exception as e:
+            print(f"🚨 투표 처리 중 오류 발생: {e}")
+            # 클라이언트에는 이미 응답을 보냈으므로, 여기서는 서버 로그만 남깁니다.
+            # 실제 프로덕션에서는 더 정교한 에러 로깅/모니터링 시스템을 사용하는 것이 좋습니다.
+            raise HTTPException(status_code=500, detail="서버 내부 오류")
 
 @app.post("/groups/{group_id}/participants")
 def join_group(group_id: str, join: ParticipantJoin):
