@@ -219,8 +219,3 @@ dmypy.json
 
 *.pyc
 __pycache__/
-Backend/__pycache__/database.cpython-313.pyc
-Backend/__pycache__/database.cpython-313.pyc
-Backend/__pycache__/firebase_config.cpython-313.pyc
-Backend/__pycache__/main.cpython-313.pyc
-Backend/__pycache__/models.cpython-313.pyc
