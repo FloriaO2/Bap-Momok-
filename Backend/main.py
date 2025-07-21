@@ -13,6 +13,10 @@ import json
 import random
 import string
 import requests
+import threading  # 추가: threading 모듈 임포트
+
+# 전역 락 객체 생성
+vote_lock = threading.Lock()
 
 # import os
 # from dotenv import load_dotenv
@@ -221,26 +225,27 @@ def add_custom_candidate(
 @app.post("/groups/{group_id}/votes/{user_id}")
 def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
     print(f"[add_or_update_vote] group_id={group_id}, user_id={user_id}, vote={vote}")
-    group = get_group(group_id)
-    if group is None:
-        print(f"[add_or_update_vote] 그룹을 찾을 수 없습니다: {group_id}")
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    prev_vote = group.votes.get(user_id, {})
-    prev_vote.update(vote)
-    group.votes[user_id] = prev_vote
-    print(f"[add_or_update_vote] votes after update: {group.votes}")
-    update_candidate_vote_counts(group)
-    print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
-    # 순위 계산 및 업데이트
-    group.calculate_ranks()
-    print(f"[add_or_update_vote] candidates after rank calculation: {group.candidates}")
-    # 참가자 voted_count 업데이트
-    participant = group.participants.get(user_id)
-    if participant:
-        participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
-        print(f"[add_or_update_vote] participant {user_id} voted_count: {participant.voted_count}")
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
+    with vote_lock:  # 락 적용 시작
+        group = get_group(group_id)
+        if group is None:
+            print(f"[add_or_update_vote] 그룹을 찾을 수 없습니다: {group_id}")
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        prev_vote = group.votes.get(user_id, {})
+        prev_vote.update(vote)
+        group.votes[user_id] = prev_vote
+        print(f"[add_or_update_vote] votes after update: {group.votes}")
+        update_candidate_vote_counts(group)
+        print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
+        # 순위 계산 및 업데이트
+        group.calculate_ranks()
+        print(f"[add_or_update_vote] candidates after rank calculation: {group.candidates}")
+        # 참가자 voted_count 업데이트
+        participant = group.participants.get(user_id)
+        if participant:
+            participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
+            print(f"[add_or_update_vote] participant {user_id} voted_count: {participant.voted_count}")
+        update_group(group_id, GroupUpdate(data=group))
+        return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
 
 @app.post("/groups/{group_id}/participants")
 def join_group(group_id: str, join: ParticipantJoin):
