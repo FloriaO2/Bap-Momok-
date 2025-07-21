@@ -15,7 +15,8 @@ interface Restaurant {
 interface DirectTabProps {
   groupData: any;
   groupId: string;
-  onAddCandidate: (restaurant: Restaurant) => void;
+  onAddCandidate: (restaurant: any) => void; // 타입을 any로 변경하여 유연성 확보
+  registeredCandidateIds?: number[];
 }
 
 declare global {
@@ -24,7 +25,7 @@ declare global {
   }
 }
 
-export default function DirectTab({ groupData, groupId, onAddCandidate }: DirectTabProps) {
+export default function DirectTab({ groupData, groupId, onAddCandidate, registeredCandidateIds = [] }: DirectTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -382,6 +383,8 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
               {searchResults.map((restaurant) => {
                 const cardId = restaurant.id || restaurant.kakao_id;
+                const isRegistered = registeredCandidateIds.includes(Number(cardId));
+
                 return (
                   <div
                     key={cardId}
@@ -455,32 +458,37 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
                         ℹ️
                       </button>
                       <button
-                        onClick={e => { e.stopPropagation(); handleAddCandidate(restaurant); }}
+                        onClick={e => { e.stopPropagation(); onAddCandidate(restaurant); }}
+                        disabled={isRegistered}
                         style={{ 
                           width: "40px",
                           height: "40px",
-                          background: "#994d52",
+                          background: isRegistered ? "#ccc" : "#994d52",
                           color: "#fff",
                           border: "none",
                           borderRadius: "50%",
                           fontSize: "20px",
                           fontWeight: "bold",
-                          cursor: "pointer",
+                          cursor: isRegistered ? "not-allowed" : "pointer",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           transition: "all 0.2s"
                         }}
                         onMouseOver={(e) => {
-                          e.currentTarget.style.background = "#8a4449";
-                          e.currentTarget.style.transform = "scale(1.1)";
+                          if (!isRegistered) {
+                            e.currentTarget.style.background = "#8a4449";
+                            e.currentTarget.style.transform = "scale(1.1)";
+                          }
                         }}
                         onMouseOut={(e) => {
-                          e.currentTarget.style.background = "#994d52";
-                          e.currentTarget.style.transform = "scale(1)";
+                          if (!isRegistered) {
+                            e.currentTarget.style.background = "#994d52";
+                            e.currentTarget.style.transform = "scale(1)";
+                          }
                         }}
                       >
-                        +
+                        {isRegistered ? '✔' : '+'}
                       </button>
                     </div>
                   </div>

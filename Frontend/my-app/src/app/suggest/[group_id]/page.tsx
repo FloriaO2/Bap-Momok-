@@ -5,15 +5,6 @@ import DirectTab from '../../components/suggest/DirectTab';
 import DeliveryTab from '../../components/suggest/DeliveryTab';
 import SuggestCompleteWaitScreen from '../../components/suggest/SuggestCompleteWaitScreen';
 
-interface Restaurant {
-  id: string;
-  name: string;
-  description: string;
-  rating: number;
-  image: string;
-  category: string;
-}
-
 export default function SuggestPage({ params }: { params: Promise<{ group_id: string }> }) {
   const resolvedParams = use(params);
   const groupId = resolvedParams.group_id;
@@ -140,33 +131,32 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
     await fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/suggest-complete`, { method: 'POST' });
   };
 
-  // 후보 추가 함수
-  const addCandidate = async (restaurant: Restaurant) => {
+  // 카카오 후보 추가 함수 (신규)
+  const addKakaoCandidate = async (restaurant: any) => {
     try {
-      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates`, {
+      const response = await fetch(`${BACKEND_URL}/groups/${groupId}/candidates/kakao`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: restaurant.name,
-          type: restaurant.category,
-          detail: {
-            description: restaurant.description,
-            rating: restaurant.rating,
-            image: restaurant.image
-          }
+          added_by: participantId || 'web_user',
+          kakao_data: restaurant
         }),
       });
 
       if (response.ok) {
-        showToast(`${restaurant.name}이(가) 후보에 추가되었습니다!`);
+        showToast(`${restaurant.place_name || restaurant.name}이(가) 후보에 추가되었습니다!`);
+        // 후보 등록 성공 시, 해당 ID를 상태에 추가
+        const kakaoId = Number(restaurant.id || restaurant.kakao_id);
+        setRegisteredKakaoIds(prev => prev.includes(kakaoId) ? prev : [...prev, kakaoId]);
       } else {
-        showToast('후보 추가에 실패했습니다.');
+        const errorData = await response.json();
+        showToast(`후보 추가에 실패했습니다: ${errorData.detail}`);
       }
     } catch (error) {
-      console.error('후보 추가 오류:', error);
-      showToast('후보 추가 중 오류가 발생했습니다.');
+      console.error('카카오 후보 추가 오류:', error);
+      showToast('카카오 후보 추가 중 오류가 발생했습니다.');
     }
   };
 
@@ -207,6 +197,19 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
         .filter((c: any) => c.type === 'yogiyo' && c.detail && c.detail.yogiyo_id)
         .map((c: any) => c.detail.yogiyo_id)
     : [];
+
+  // 이미 등록된 카카오 후보 id 목록을 상태로 관리
+  const [registeredKakaoIds, setRegisteredKakaoIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (groupData?.candidates) {
+      setRegisteredKakaoIds(
+        Object.values(groupData.candidates)
+          .filter((c: any) => c.type === 'kakao' && c.detail && c.detail.kakao_id)
+          .map((c: any) => c.detail.kakao_id)
+      );
+    }
+  }, [groupData]);
 
   if (!groupData) {
     return (
@@ -382,7 +385,8 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
           <DirectTab 
             groupData={groupData}
             groupId={groupId}
-            onAddCandidate={addCandidate}
+            onAddCandidate={addKakaoCandidate}
+            registeredCandidateIds={registeredKakaoIds}
           />
         )}
         
