@@ -13,6 +13,7 @@ import json
 import random
 import string
 import requests
+import threading
 
 # import os
 # from dotenv import load_dotenv
@@ -21,6 +22,9 @@ import requests
 # BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 app = FastAPI(title="Babmomok API", description="밥모임 API 서버")
+
+# 전역 Lock 객체 생성
+vote_lock = threading.Lock()
 
 # Firebase 초기화
 firebase_initialized = initialize_firebase()
@@ -218,29 +222,26 @@ def add_custom_candidate(
     update_group(group_id, GroupUpdate(data=group))
     return {"message": "커스텀 후보가 성공적으로 추가되었습니다", "candidate_id": candidate_id, "data": group}
 
-@app.post("/groups/{group_id}/votes/{user_id}")
-def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
-    print(f"[add_or_update_vote] group_id={group_id}, user_id={user_id}, vote={vote}")
-    group = get_group(group_id)
-    if group is None:
-        print(f"[add_or_update_vote] 그룹을 찾을 수 없습니다: {group_id}")
-        raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-    prev_vote = group.votes.get(user_id, {})
-    prev_vote.update(vote)
-    group.votes[user_id] = prev_vote
-    print(f"[add_or_update_vote] votes after update: {group.votes}")
-    update_candidate_vote_counts(group)
-    print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
-    # 순위 계산 및 업데이트
-    group.calculate_ranks()
-    print(f"[add_or_update_vote] candidates after rank calculation: {group.candidates}")
-    # 참가자 voted_count 업데이트
-    participant = group.participants.get(user_id)
-    if participant:
-        participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
-        print(f"[add_or_update_vote] participant {user_id} voted_count: {participant.voted_count}")
-    update_group(group_id, GroupUpdate(data=group))
-    return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
+@app.post("/groups/{group_id}/votes/{participant_id}")
+def cast_vote(group_id: str, participant_id: str, vote: Vote):
+    with vote_lock:
+        group = get_group(group_id)
+        if not group:
+            raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
+        
+        nickname = group.participants.get(participant_id, {}).get('nickname', '알 수 없는 참가자')
+
+        if participant_id not in group.votes:
+            group.votes[participant_id] = {}
+        
+        for candidate_id, vote_value in vote.root.items():
+            group.votes[participant_id][candidate_id] = vote_value
+            print(f"[{participant_id}]님이 [{candidate_id}]에 [{vote_value}] 투표함")
+        
+        update_candidate_vote_counts(group)
+        update_group(group_id, GroupUpdate(data=group))
+        
+        return {"message": "투표가 성공적으로 기록되었습니다"}
 
 @app.post("/groups/{group_id}/participants")
 def join_group(group_id: str, join: ParticipantJoin):
