@@ -136,10 +136,10 @@ function TinderPageContent() {
   }, [currentCardIndex, candidates.length, groupId, loading]);
 
   useEffect(() => {
-    // 투표 완료 여부 확인 후 true면 바로 live-results로 이동
+    // 3초마다 투표 완료 여부 확인 후 true면 바로 live-results로 이동
     const participantId = groupId ? sessionStorage.getItem(`participant_id_${groupId}`) : null;
-    const checkVoteComplete = () => {
-      if (groupId && participantId) {
+    if (groupId && participantId) {
+      const interval = setInterval(() => {
         fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/vote_complete`)
           .then(res => res.json())
           .then(data => {
@@ -150,11 +150,9 @@ function TinderPageContent() {
           .catch(err => {
             console.error('vote_complete API 확인 실패:', err);
           });
-      }
-    };
-    checkVoteComplete(); // 렌더링 직후 1회
-    const timeout = setTimeout(checkVoteComplete, 3000); // 3초 후 1회 더
-    return () => clearTimeout(timeout);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
   }, [groupId]);
 
   if (loading) {
