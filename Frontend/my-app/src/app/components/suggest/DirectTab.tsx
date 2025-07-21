@@ -26,7 +26,6 @@ declare global {
 
 export default function DirectTab({ groupData, groupId, onAddCandidate }: DirectTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -36,7 +35,8 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
   const [modalOpen, setModalOpen] = useState(false);
   const [modalUrl, setModalUrl] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(15);
+  const [searchMode, setSearchMode] = useState<'default' | 'custom'>('default');
+  const [isEnd, setIsEnd] = useState(false);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -72,13 +72,16 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
               };
               setLoading(true);
               setShowSearchResults(true);
-              psRef.current.keywordSearch('맛집', (data: any, status: any) => {
+              psRef.current.keywordSearch('맛집', (data: any, status: any, pagination: any) => {
                 setLoading(false);
                 if (status === window.kakao.maps.services.Status.OK) {
                   setSearchResults(data); // place 원본 객체 그대로 저장
+                  setPage(1); // 페이지 초기화
+                  setIsEnd(pagination && pagination.hasNextPage === false);
                   console.log(`[자동 맛집 검색] x: ${groupData.x}, y: ${groupData.y}, radius: ${groupData.radius}m, keyword: "맛집"`);
                 } else {
                   setSearchResults([]);
+                  setIsEnd(true);
                 }
               }, options);
             }
@@ -115,34 +118,58 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
     }
   }, [groupData]);
 
+  // 자동 추천(맛집) 검색: 최초 groupData 변경 시 1회만 실행
+  useEffect(() => {
+    if (searchMode === 'default' && groupData && typeof window !== 'undefined' && window.kakao && window.kakao.maps && window.kakao.maps.services) {
+      const options: any = {
+        location: new window.kakao.maps.LatLng(groupData.x, groupData.y),
+        radius: groupData.radius,
+        category_group_code: 'FD6',
+        size: 15,
+        page: 1
+      };
+      setLoading(true);
+      setShowSearchResults(true);
+      psRef.current = new window.kakao.maps.services.Places();
+      psRef.current.keywordSearch('맛집', (data: any, status: any, pagination: any) => {
+        setLoading(false);
+        if (status === window.kakao.maps.services.Status.OK) {
+          setSearchResults(data);
+          setPage(1);
+          setIsEnd(pagination && pagination.hasNextPage === false);
+        } else {
+          setSearchResults([]);
+          setIsEnd(true);
+        }
+      }, options);
+    }
+  }, [groupData, searchMode]);
+
   // 검색 실행 (페이지네이션 적용)
-  const handleSearch = (resetPage = true) => {
+  const handleSearch = (resetPage = true, mode: 'default' | 'custom' = searchMode) => {
     let keyword = searchTerm.trim();
+    if (mode === 'default') keyword = '맛집';
     const nextPage = resetPage ? 1 : page + 1;
     let searchOptions: any = { category_group_code: 'FD6', size: 15, page: nextPage };
 
-    if (!keyword) {
-      // 검색어가 없으면 자동 검색(맛집, groupData 위치/반경)
-      keyword = "맛집";
+    if (mode === 'default') {
+      // groupData 위치/반경
       if (groupData && groupData.x && groupData.y && groupData.radius) {
         searchOptions.location = new window.kakao.maps.LatLng(groupData.x, groupData.y);
         searchOptions.radius = groupData.radius;
-        console.log(`[자동 더보기] x: ${groupData.x}, y: ${groupData.y}, radius: ${groupData.radius}m, keyword: "맛집", page: ${nextPage}`);
       }
     } else {
-      // 검색어가 있으면 기존대로 지도 중심 기준
-      if (mapRef.current && typeof window !== 'undefined' && window.kakao && window.kakao.maps) {
+      // custom: 지도 중심, 반경 없음
+      if (mapRef.current && window.kakao && window.kakao.maps) {
         const center = mapRef.current.getCenter();
         searchOptions.location = center;
-        console.log(`[카카오맵 검색] 현재 지도 중심 x: ${center.getLat()}, y: ${center.getLng()}, keyword: "${keyword}", page: ${nextPage}`);
-      } else {
-        console.log(`[카카오맵 검색] 지도 인스턴스 없음, keyword: "${keyword}", page: ${nextPage}`);
+        // radius는 넣지 않음
       }
     }
 
     setLoading(true);
     setShowSearchResults(true);
-    psRef.current.keywordSearch(keyword, (data: any, status: any) => {
+    psRef.current.keywordSearch(keyword, (data: any, status: any, pagination: any) => {
       setLoading(false);
       if (status === window.kakao.maps.services.Status.OK) {
         if (resetPage) {
@@ -156,8 +183,15 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
           });
           setPage(nextPage);
         }
+        // pagination이 없거나, data가 15개 미만이면 isEnd를 true로
+        if (!pagination || data.length < 15) {
+          setIsEnd(true);
+        } else {
+          setIsEnd(pagination.hasNextPage === false);
+        }
       } else {
         if (resetPage) setSearchResults([]);
+        setIsEnd(true);
       }
     }, searchOptions);
   };
@@ -165,7 +199,8 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
   // 검색어 입력 시 엔터키 처리
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch(true);
+      setSearchMode('custom');
+      handleSearch(true, 'custom');
     }
   };
 
@@ -174,18 +209,6 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
     handleSearch(false);
   };
 
-
-  // 카테고리 분류
-  const getCategoryFromName = (name: string, category: string) => {
-    const lowerName = name.toLowerCase();
-    const lowerCategory = category ? category.toLowerCase() : '';
-    
-    if (lowerName.includes('치킨') || lowerCategory.includes('치킨')) return 'chicken';
-    if (lowerName.includes('피자') || lowerCategory.includes('피자')) return 'pizza';
-    if (lowerName.includes('중국') || lowerName.includes('마라') || lowerCategory.includes('중식')) return 'chinese';
-    if (lowerName.includes('맥도날드') || lowerName.includes('버거킹') || lowerName.includes('롯데리아')) return 'franchise';
-    return 'korean';
-  };
 
   // 후보 추가 함수 (+버튼 클릭 시)
   const handleAddCandidate = async (restaurant: any) => {
@@ -230,9 +253,6 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
       }
     }
   };
-
-  const visibleResults = searchResults;
-  console.log("searchResults.length:", searchResults.length, "visibleCount:", visibleCount);
 
   return (
     <div>
@@ -290,7 +310,10 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
             }
           `}</style>
           <button
-            onClick={handleSearch}
+            onClick={() => {
+              setSearchMode('custom');
+              handleSearch(true, 'custom');
+            }}
             disabled={loading}
             style={{ 
               padding: "12px 20px",
@@ -357,7 +380,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              {visibleResults.map((restaurant) => {
+              {searchResults.map((restaurant) => {
                 const cardId = restaurant.id || restaurant.kakao_id;
                 return (
                   <div
@@ -463,10 +486,10 @@ export default function DirectTab({ groupData, groupId, onAddCandidate }: Direct
                   </div>
                 );
               })}
-              {searchResults.length > 0 && searchResults.length % 15 === 0 && (
+              {!isEnd && searchResults.length >= 15 && (
                 <button
                   type="button"
-                  onClick={e => { e.preventDefault(); handleLoadMore(); }}
+                  onClick={e => { e.preventDefault(); handleSearch(false, searchMode); }}
                   style={{
                     width: "100%",
                     padding: "12px",
