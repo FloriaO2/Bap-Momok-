@@ -301,26 +301,50 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
         padding: "0 8px",
         boxSizing: "border-box"
       }}>
-        <div style={{ display: "flex", width: "100%" }}>
-          <input
-            type="text"
-            placeholder={placeholder}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={handleKeyPress}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              padding: "12px 15px",
-              border: "1px solid #e0e0e0",
-              borderRadius: "8px 0 0 8px",
-              fontSize: "16px",
-              outline: "none",
-              color: "#222",
-              background: "#fff",
-              boxSizing: "border-box"
-            }}
-          />
+        <div style={{ display: "flex", width: "100%", position: "relative" }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <input
+              type="text"
+              placeholder={placeholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              style={{
+                width: "100%",
+                minWidth: 0,
+                padding: "12px 15px",
+                border: "1px solid #e0e0e0",
+                borderRadius: "8px 0 0 8px",
+                fontSize: "16px",
+                outline: "none",
+                color: "#222",
+                background: "#fff",
+                boxSizing: "border-box"
+              }}
+            />
+            {searchTerm && !loading && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setShowSearchResults(false);
+                  setSearchResults([]);
+                }}
+                style={{
+                  position: "absolute",
+                  right: "calc(clamp(40px, 18vw, 80px) - 55px)",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  fontSize: "18px",
+                  color: "#999",
+                  cursor: "pointer"
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
           <button
             className="responsive-search-btn"
             onClick={() => {
@@ -345,28 +369,6 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
             {loading ? "검색중..." : "검색"}
           </button>
         </div>
-        {searchTerm && !loading && (
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setShowSearchResults(false);
-              setSearchResults([]);
-            }}
-            style={{
-              position: "absolute",
-              right: "15px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              background: "none",
-              border: "none",
-              fontSize: "18px",
-              color: "#999",
-              cursor: "pointer"
-            }}
-          >
-            ✕
-          </button>
-        )}
       </div>
 
       {/* 검색 결과 목록 */}
