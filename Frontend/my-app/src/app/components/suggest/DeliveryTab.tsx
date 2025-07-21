@@ -53,9 +53,11 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
   const [categoryPageMap, setCategoryPageMap] = useState<{ [cat: string]: number }>(initialPageMap);
   const [categoryDoneMap, setCategoryDoneMap] = useState<{ [cat: string]: boolean }>(initialDoneMap);
 
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
   // 페이지별 식당 불러오기 (기존 fetchPage)
   const fetchPage = async (category: string, pageNum: number) => {
-    const res = await fetch(`/groups/${groupId}/yogiyo-restaurants?category=${encodeURIComponent(category)}&page=${pageNum}`);
+    const res = await fetch(`${BACKEND_URL}/groups/${groupId}/yogiyo-restaurants?category=${encodeURIComponent(category)}&page=${pageNum}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.restaurants || [];
