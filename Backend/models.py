@@ -35,7 +35,6 @@ class Candidate(BaseModel):
 class Participant(BaseModel):
     nickname: str
     suggest_complete: bool
-    vote_complete: bool
     voted_count: Optional[int] = 0
 
 class ParticipantJoin(BaseModel):

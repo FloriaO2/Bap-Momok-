@@ -105,3 +105,5 @@ def update_groups_data(groups_data: GroupsData) -> GroupsData:
         return groups_data
     except Exception as e:
         raise Exception(f"Firebase 전체 데이터 업데이트 중 오류: {str(e)}") 
+
+# vote_complete 관련 함수, 로직, 주석 전체 삭제 

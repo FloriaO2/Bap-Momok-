@@ -53,7 +53,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
           setTimeLeft("투표 종료");
           // 투표 시간이 끝나면 3초 후 결과 화면으로 이동
           setTimeout(() => {
-            window.location.href = `/results/${groupId}`;
+            window.location.href = `/live-results/${groupId}`;
           }, 3000);
         }
       }, 1000);
@@ -162,21 +162,51 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
     }
   };
 
-  // 공유하기
+  // 카카오톡 공유 SDK 동적 로드 및 초기화
+  useEffect(() => {
+    // 카카오 SDK 동적 로드
+    if (typeof window !== 'undefined' && !(window as any).Kakao) {
+      const script = document.createElement('script');
+      script.src = 'https://developers.kakao.com/sdk/js/kakao.min.js';
+      script.async = true;
+      script.onload = () => {
+        if ((window as any).Kakao && !(window as any).Kakao.isInitialized()) {
+          (window as any).Kakao.init('45874862ce4eb9af215a1e6f553c9375');
+        }
+      };
+      document.body.appendChild(script);
+    } else if ((window as any).Kakao && !(window as any).Kakao.isInitialized()) {
+      (window as any).Kakao.init('45874862ce4eb9af215a1e6f553c9375');
+    }
+  }, []);
+
+  // 카카오톡 공유하기
   const shareLink = async () => {
     const inviteUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "밥모임에 초대합니다!",
-          text: "밥모임 투표에 참여해주세요!",
-          url: inviteUrl,
-        });
-      } catch (err) {
-        console.error("공유 실패:", err);
-      }
+    if ((window as any).Kakao && (window as any).Kakao.Share) {
+      (window as any).Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: '밥모임에 초대합니다!',
+          description: '밥모임 투표에 참여해주세요!',
+          imageUrl: 'https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg', // 임시 이미지, 원하면 변경 가능
+          link: {
+            mobileWebUrl: inviteUrl,
+            webUrl: inviteUrl,
+          },
+        },
+        buttons: [
+          {
+            title: '참여하러 가기',
+            link: {
+              mobileWebUrl: inviteUrl,
+              webUrl: inviteUrl,
+            },
+          },
+        ],
+      });
     } else {
-      copyLink();
+      alert('카카오톡 공유를 사용할 수 없습니다.');
     }
   };
 
@@ -411,7 +441,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
                 flex: 1,
                 textAlign: "left"
               }}>
-                ${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/{groupId}
+                {`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`}
               </span>
               <div style={{ display: "flex", gap: "10px", marginLeft: "10px" }}>
                 <button 

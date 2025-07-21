@@ -120,27 +120,15 @@ function TinderPageContent() {
     }
   };
 
-  // 모든 후보 투표 완료 시 vote_complete true로 업데이트
-  React.useEffect(() => {
-    if (currentCardIndex >= candidates.length) {
-      if (!groupId) return;
-      const participantId = sessionStorage.getItem(`participant_id_${groupId}`);
-      if (!participantId) return;
-      const updateVoteComplete = async () => {
-        try {
-          await fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/vote-complete`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ vote_complete: true })
-          });
-        } catch (e) {
-          // TODO: 토스트로 안내 (alert 대체)
-          alert('투표 완료 상태 업데이트에 실패했습니다.');
-        }
-      };
-      updateVoteComplete();
+  // 3초 후 자동 이동 (중복 이동 방지, Hook 규칙 준수)
+  useEffect(() => {
+    if (currentCardIndex >= candidates.length && groupId) {
+      const timeout = setTimeout(() => {
+        window.location.href = `/live-results/${groupId}`;
+      }, 3000);
+      return () => clearTimeout(timeout);
     }
-  }, [groupId, currentCardIndex, candidates.length]);
+  }, [currentCardIndex, candidates.length, groupId, router]);
 
   if (loading) {
     return (
@@ -169,36 +157,7 @@ function TinderPageContent() {
           <div className={styles.overlay}>
             <div className={styles.completionContainer}>
               <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
-              <p className={styles.completionText}>투표가 완료되었습니다.</p>
-              <div className={styles.completionButtons}>
-                <button 
-                  className={styles.completionButton}
-                  onClick={() => { 
-                    if (groupId) {
-                      window.location.href = `/live-results/${groupId}`;
-                    } else {
-                      alert('groupId가 없습니다!');
-                    }
-                  }}
-                  style={{ background: '#28a745' }}
-                >
-                  실시간 결과
-                </button>
-                <button 
-                  className={styles.completionButton}
-                  onClick={viewResults}
-                  style={{ background: '#dc3545' }}
-                >
-                  최종 결과
-                </button>
-                {/* 참여 화면으로 버튼 제거 */}
-                <button 
-                  className={styles.completionButton}
-                  onClick={goHome}
-                >
-                  홈으로
-                </button>
-              </div>
+              <p className={styles.completionText}>투표가 완료되었습니다.<br/>잠시후 실시간 결과 화면으로 이동합니다.</p>
             </div>
           </div>
         </div>
