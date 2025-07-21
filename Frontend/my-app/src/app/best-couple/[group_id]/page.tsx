@@ -123,9 +123,9 @@ export default function BestCouplePage() {
         border: "none"
       }}>
         <h2 style={{textAlign:'center', marginBottom:24, color:'#222', fontWeight:700, fontSize:28, letterSpacing:-1}}>Best Couple</h2>
-        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24}}>
+        <div style={{display:'flex', justifyContent:'center', alignItems:'center', marginBottom:24}}>
           <div style={{fontWeight:'bold', fontSize:20, color:'#222'}}>{name1}</div>
-          <div style={{fontSize:28, color:'#994d52', margin:'0 16px'}} aria-label="하트" title="하트">❤️</div>
+          <div style={{fontSize:28, color:'#994d52', margin:'0 8px'}} aria-label="하트" title="하트">❤️</div>
           <div style={{fontWeight:'bold', fontSize:20, color:'#222'}}>{name2}</div>
         </div>
         <div style={{display:'flex', justifyContent:'center', alignItems:'center', marginBottom:24}}>
