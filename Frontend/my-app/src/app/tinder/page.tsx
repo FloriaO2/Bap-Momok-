@@ -57,7 +57,7 @@ function TinderPageContent() {
       const response = await fetch(`${BACKEND_URL}/groups/${groupId}/votes/${participantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [candidateId]: vote })
+        body: JSON.stringify({ "root": { [candidateId]: vote } })
       });
       
       if (response.ok) {
