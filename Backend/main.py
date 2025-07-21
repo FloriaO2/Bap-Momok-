@@ -14,6 +14,7 @@ import random
 import string
 import requests
 import threading  # 추가: threading 모듈 임포트
+from firebase_admin import db
 
 # 전역 락 객체 생성
 vote_lock = threading.Lock()
@@ -343,3 +344,18 @@ def get_yogiyo_restaurants(group_id: str, category: str = Query("", description=
         raise HTTPException(status_code=502, detail="요기요 API 호출 실패")
 
     return response.json()
+
+@app.get("/groups/{group_id}/participants/{participant_id}/vote_complete")
+def check_vote_complete(group_id: str, participant_id: str):
+    group_ref = db.reference(f"groups/{group_id}")
+    group_data = group_ref.get()
+    if not group_data:
+        raise HTTPException(status_code=404, detail="Group not found")
+    participants = group_data.get("participants", {})
+    participant = participants.get(participant_id)
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    voted_count = participant.get("voted_count", 0)
+    candidates = group_data.get("candidates", {})
+    candidate_count = len(candidates)
+    return {"vote_complete": voted_count == candidate_count}

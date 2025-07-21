@@ -135,6 +135,23 @@ function TinderPageContent() {
     }
   }, [currentCardIndex, candidates.length, groupId, loading]);
 
+  useEffect(() => {
+    // 투표 완료 여부 확인 후 true면 바로 live-results로 이동
+    const participantId = groupId ? sessionStorage.getItem(`participant_id_${groupId}`) : null;
+    if (groupId && participantId) {
+      fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/vote_complete`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.vote_complete) {
+            window.location.href = `/live-results/${groupId}`;
+          }
+        })
+        .catch(err => {
+          console.error('vote_complete API 확인 실패:', err);
+        });
+    }
+  }, [groupId]);
+
   if (loading) {
     return (
       <div className={styles.container}>
