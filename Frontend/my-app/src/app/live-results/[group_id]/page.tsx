@@ -15,6 +15,7 @@ export default function LiveResultsPage() {
   const [votingProgress, setVotingProgress] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   useEffect(() => {
     // live-results 진입 시 vote_complete를 true로 강제 변경
@@ -77,6 +78,66 @@ export default function LiveResultsPage() {
   }, [groupId]);
 
   console.log("candidates state:", candidates);
+
+  // 후보별로 옵션별 투표자 닉네임 목록 반환 함수
+  const getVoteMembersByOption = (candidateId: string | number, option: string): string[] => {
+    if (!groupData?.votes) return [];
+    return Object.entries(groupData.votes as Record<string, Record<string, string>>)
+      .filter(([participantId, votes]) => votes[String(candidateId)] === option)
+      .map(([participantId]) => groupData.participants?.[participantId]?.nickname || participantId);
+  };
+
+  const tooltipStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '150%', // 아래로 위치 변경
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: '#fff', // 밝은 배경색
+    color: '#333', // 어두운 글자색
+    padding: '8px 12px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    whiteSpace: 'nowrap',
+    zIndex: 10,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)', // 그림자 조정
+    textAlign: 'left',
+    pointerEvents: 'none',
+    width: 'max-content'
+  };
+
+  const tooltipArrowStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '-4px', // 화살표 위치 위로 변경
+    left: '50%',
+    transform: 'translateX(-50%) rotate(45deg)',
+    width: '8px',
+    height: '8px',
+    background: '#fff', // 배경색과 동일하게
+  };
+
+  const VoteDisplay = ({ candidateId, option, emoji, count }: { candidateId: string, option: string, emoji: string, count: number }) => {
+    const tooltipId = `${candidateId}-${option}`;
+    const members = getVoteMembersByOption(candidateId, option);
+
+    return (
+      <span
+        style={{ position: 'relative', cursor: 'pointer' }}
+        onMouseEnter={() => setActiveTooltip(tooltipId)}
+        onMouseLeave={() => setActiveTooltip(null)}
+      >
+        {emoji} {count}
+        {activeTooltip === tooltipId && (
+          <div style={tooltipStyle}>
+            {members.length > 0
+              ? members.map(name => <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0' }}>👤<span>{name}</span></div>)
+              : <div style={{ padding: '2px 0' }}>투표자 없음</div>
+            }
+            <div style={tooltipArrowStyle} />
+          </div>
+        )}
+      </span>
+    );
+  };
 
   const medalColors = [
     'linear-gradient(90deg, #FFD700 0%, #FFEF8A 100%)', // 금
@@ -151,8 +212,11 @@ export default function LiveResultsPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 18, fontWeight: 600, color: "#222" }}>{c.name}</div>
-                  <div style={{ fontSize: 14, color: "#888" }}>
-                    👍 {c.good || 0} / 👌 {c.soso || 0} / 👎 {c.bad || 0} / 🚫 {c.never || 0}
+                  <div style={{ fontSize: 14, color: "#888", display: 'flex', gap: '12px', marginTop: '4px' }}>
+                    <VoteDisplay candidateId={c.id} option="good" emoji="👍" count={c.good || 0} />
+                    <VoteDisplay candidateId={c.id} option="soso" emoji="👌" count={c.soso || 0} />
+                    <VoteDisplay candidateId={c.id} option="bad" emoji="👎" count={c.bad || 0} />
+                    <VoteDisplay candidateId={c.id} option="never" emoji="🚫" count={c.never || 0} />
                   </div>
                 </div>
                 <div style={{ fontSize: 16, color: "#994d52", fontWeight: 700 }}>점수: {c.score}</div>
