@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import KakaoMap from '../../components/KakaoMap';
 
 interface Restaurant {
@@ -30,13 +30,14 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [searchMode, setSearchMode] = useState<'default' | 'custom'>('default');
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const mapRef = useRef<any>(null);
   const psRef = useRef<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalUrl, setModalUrl] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchMode, setSearchMode] = useState<'default' | 'custom'>('default');
+  const [isEnd, setIsEnd] = useState(false);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -71,16 +72,17 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
                 category_group_code: 'FD6'
               };
               setLoading(true);
+              setShowSearchResults(true);
               psRef.current.keywordSearch('맛집', (data: any, status: any, pagination: any) => {
                 setLoading(false);
                 if (status === window.kakao.maps.services.Status.OK) {
                   setSearchResults(data); // place 원본 객체 그대로 저장
                   setPage(1); // 페이지 초기화
-                  setHasMore(pagination && pagination.hasNextPage === false);
+                  setIsEnd(pagination && pagination.hasNextPage === false);
                   console.log(`[자동 맛집 검색] x: ${groupData.x}, y: ${groupData.y}, radius: ${groupData.radius}m, keyword: "맛집"`);
                 } else {
                   setSearchResults([]);
-                  setHasMore(true); // 검색 실패 시 더보기 버튼 활성화
+                  setIsEnd(true);
                 }
               }, options);
             }
@@ -128,16 +130,17 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
         page: 1
       };
       setLoading(true);
+      setShowSearchResults(true);
       psRef.current = new window.kakao.maps.services.Places();
       psRef.current.keywordSearch('맛집', (data: any, status: any, pagination: any) => {
         setLoading(false);
         if (status === window.kakao.maps.services.Status.OK) {
           setSearchResults(data);
           setPage(1);
-          setHasMore(pagination && pagination.hasNextPage === false);
+          setIsEnd(pagination && pagination.hasNextPage === false);
         } else {
           setSearchResults([]);
-          setHasMore(true); // 검색 실패 시 더보기 버튼 활성화
+          setIsEnd(true);
         }
       }, options);
     }
@@ -166,6 +169,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
     }
 
     setLoading(true);
+    setShowSearchResults(true);
     psRef.current.keywordSearch(keyword, (data: any, status: any, pagination: any) => {
       setLoading(false);
       if (status === window.kakao.maps.services.Status.OK) {
@@ -182,13 +186,13 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
         }
         // pagination이 없거나, data가 15개 미만이면 isEnd를 true로
         if (!pagination || data.length < 15) {
-          setHasMore(true); // 더보기 버튼 비활성화
+          setIsEnd(true);
         } else {
-          setHasMore(pagination.hasNextPage === false);
+          setIsEnd(pagination.hasNextPage === false);
         }
       } else {
         if (resetPage) setSearchResults([]);
-        setHasMore(true); // 검색 실패 시 더보기 버튼 활성화
+        setIsEnd(true);
       }
     }, searchOptions);
   };
@@ -251,72 +255,6 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
     }
   };
 
-  // fetch 함수: page 단위로 데이터 추가
-  const fetchPlaces = useCallback(async (pageNum: number, append: boolean) => {
-    setLoading(true);
-    try {
-      // 검색어, 위치, 반경 등 기존 옵션 유지
-      const keyword = searchTerm.trim() || '맛집';
-      const options: any = { category_group_code: 'FD6', size: 15, page: pageNum };
-
-      if (searchMode === 'default') {
-        // groupData 위치/반경
-        if (groupData && groupData.x && groupData.y && groupData.radius) {
-          options.location = new window.kakao.maps.LatLng(groupData.x, groupData.y);
-          options.radius = groupData.radius;
-        }
-      } else {
-        // custom: 지도 중심, 반경 없음
-        if (mapRef.current && window.kakao && window.kakao.maps) {
-          const center = mapRef.current.getCenter();
-          options.location = center;
-          // radius는 넣지 않음
-        }
-      }
-
-      const data = await new Promise<{ data: any[]; pagination: any }>((resolve) => {
-        psRef.current.keywordSearch(keyword, (data: any, status: any, pagination: any) => {
-          if (status === window.kakao.maps.services.Status.OK) {
-            resolve({ data, pagination });
-          } else {
-            resolve({ data: [], pagination: null });
-          }
-        }, options);
-      });
-      if (append) {
-        setSearchResults(prev => [...prev, ...data.data]);
-      } else {
-        setSearchResults(data.data);
-      }
-      // 더이상 불러올 데이터가 없으면 hasMore를 false로
-      setHasMore(!!(data.pagination && data.pagination.hasNextPage));
-      setPage(pageNum);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchTerm, searchMode, groupData]);
-
-  // 더보기 클릭
-  const loadMore = () => {
-    if (!loading && hasMore) {
-      fetchPlaces(page + 1, true);
-    }
-  };
-
-  // 최초/검색어 변경/탭 변경 시 1페이지 불러오기
-  useEffect(() => {
-    fetchPlaces(1, false);
-  }, [searchMode, groupData, searchTerm]);
-
-  // 검색어 입력 시 엔터키 처리
-  useEffect(() => {
-    if (searchTerm) {
-      setSearchMode('custom');
-      handleSearch(true, 'custom');
-    }
-  }, [searchTerm]);
-
-  // --- UI 부분 ---
   return (
     <div>
       {/* 지도 표시 */}
@@ -397,9 +335,8 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
           <button
             onClick={() => {
               setSearchTerm('');
+              setShowSearchResults(false);
               setSearchResults([]);
-              setPage(1);
-              setHasMore(true);
             }}
             style={{ 
               position: "absolute",
@@ -418,28 +355,50 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
         )}
       </div>
 
-      {/* 기존 식당 목록 (검색 결과가 없을 때만 표시) */}
-      <div style={{ height: "calc(100vh - 500px)", minHeight: "200px", maxHeight: "50vh", overflowY: "auto" }}>
-        <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#333", marginBottom: "15px" }}>
-          음식점 목록
-        </h3>
-        {loading && searchResults.length === 0 ? (
-          <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
-            음식점 정보를 불러오는 중...
-          </div>
-        ) : searchResults.length === 0 && !hasMore ? (
-          <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
-            음식점이 없습니다
-          </div>
-        ) : (
-          <>
+      {/* 검색 결과 목록 */}
+      {showSearchResults && (
+        <div style={{ 
+          marginBottom: "20px",
+          maxHeight: "400px",
+          overflowY: "auto"
+        }}>
+          <h3 style={{ 
+            fontSize: "18px", 
+            fontWeight: "bold", 
+            color: "#333", 
+            marginBottom: "15px"
+          }}>
+            검색 결과
+          </h3>
+          
+          {loading ? (
+            <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
+              검색 중...
+            </div>
+          ) : searchResults.length === 0 ? (
+            <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
+              검색 결과가 없습니다
+            </div>
+          ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              {searchResults.map((r) => {
-                const isRegistered = registeredCandidateIds.includes(Number(r.id || r.kakao_id));
+              {searchResults.map((restaurant) => {
+                const cardId = restaurant.id || restaurant.kakao_id;
+                const isRegistered = registeredCandidateIds.includes(Number(cardId));
+
                 return (
                   <div
-                    key={r.id || r.kakao_id}
-                    style={{ display: "flex", alignItems: "center", padding: "15px", background: "#f8f9fa", borderRadius: "12px", gap: "15px" }}
+                    key={cardId}
+                    onClick={() => handleCardClick(cardId, restaurant)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "15px",
+                      background: "#f8f9fa",
+                      borderRadius: "12px",
+                      gap: "15px",
+                      border: selectedId === cardId ? "2px solid #994d52" : "2px solid transparent",
+                      cursor: "pointer"
+                    }}
                   >
                     {/* 정보 */}
                     <div style={{ flex: 1 }}>
@@ -449,38 +408,38 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
                         color: "#333",
                         marginBottom: "4px"
                       }}>
-                        {r.place_name || r.name}
+                        {restaurant.place_name || restaurant.name}
                       </div>
                       <div style={{ 
                         fontSize: "14px", 
                         color: "#666",
                         marginBottom: "4px"
                       }}>
-                        {r.category_name ? r.category_name.split('>').pop() : ''}
+                        {restaurant.category_name ? restaurant.category_name.split('>').pop() : ''}
                       </div>
-                      {r.road_address_name && (
+                      {restaurant.road_address_name && (
                         <div style={{ 
                           fontSize: "12px", 
                           color: "#999",
                           marginBottom: "2px"
                         }}>
-                          📍 {r.road_address_name}
+                          📍 {restaurant.road_address_name}
                         </div>
                       )}
-                      {r.address_name && (
+                      {restaurant.address_name && (
                         <div style={{ 
                           fontSize: "12px", 
                           color: "#999",
                           marginBottom: "2px"
                         }}>
-                          📍 {r.address_name}
+                          📍 {restaurant.address_name}
                         </div>
                       )}
                     </div>
                     {/* 버튼 영역: i버튼 + +버튼 */}
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: 12 }}>
                       <button
-                        onClick={e => { e.stopPropagation(); handleInfoClick(r); }}
+                        onClick={e => { e.stopPropagation(); handleInfoClick(restaurant); }}
                         style={{
                           background: "#eee",
                           border: "none",
@@ -491,15 +450,15 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          cursor: r.id || r.kakao_id ? "pointer" : "not-allowed"
+                          cursor: restaurant.id || restaurant.kakao_id ? "pointer" : "not-allowed"
                         }}
                         title="카카오 플레이스 정보"
-                        disabled={!(r.id || r.kakao_id)}
+                        disabled={!(restaurant.id || restaurant.kakao_id)}
                       >
                         ℹ️
                       </button>
                       <button
-                        onClick={e => { e.stopPropagation(); onAddCandidate(r); }}
+                        onClick={e => { e.stopPropagation(); onAddCandidate(restaurant); }}
                         disabled={isRegistered}
                         style={{ 
                           width: "40px",
@@ -535,31 +494,54 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
                   </div>
                 );
               })}
-            </div>
-            {loading && (
-              <div style={{ textAlign: "center", color: "#999", padding: "20px 0" }}>
-                더 많은 음식점을 불러오는 중...
-              </div>
-            )}
-            {!loading && hasMore && (
-              <div style={{ textAlign: "center", margin: "20px 0" }}>
-                <button onClick={loadMore} style={{
-                  background: "#994d52",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "20px",
-                  padding: "10px 30px",
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}>
-                  더보기
+              {!isEnd && searchResults.length >= 15 && (
+                <button
+                  type="button"
+                  onClick={e => { e.preventDefault(); handleSearch(false, searchMode); }}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    marginTop: "10px",
+                    background: "#994d52",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}
+                  disabled={loading}
+                >
+                  {loading ? "로딩 중..." : "더보기"}
                 </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 기존 식당 목록 (검색 결과가 없을 때만 표시) */}
+      {!showSearchResults && (
+        <div style={{ 
+          height: "calc(100vh - 800px)",
+          minHeight: "200px",
+          maxHeight: "50vh",
+          overflowY: "auto"
+        }}>
+          <h3 style={{ 
+            fontSize: "18px", 
+            fontWeight: "bold", 
+            color: "#333", 
+            marginBottom: "15px"
+          }}>
+            음식점 목록
+          </h3>
+          
+          <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
+            검색어를 입력하여 음식점을 찾아보세요
+          </div>
+        </div>
+      )}
       {/* 모달 */}
       {modalOpen && (
         <div
