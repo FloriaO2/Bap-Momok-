@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import styles from './map.module.css';
+import { Suspense } from 'react';
 
 declare global {
   interface Window {
@@ -10,7 +11,7 @@ declare global {
   }
 }
 
-export default function MapPage() {
+function MapPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomId = searchParams.get('roomId');
@@ -43,7 +44,6 @@ export default function MapPage() {
             <h1 className={styles.title}>카카오지도</h1>
             {roomId && <span className={styles.roomId}>방 ID: {roomId}</span>}
           </div>
-          
           {/* 개발 중 메시지 */}
           <div className={styles.developmentMessage}>
             <h2 className={styles.developmentTitle}>🚧 개발 중입니다!</h2>
@@ -61,103 +61,12 @@ export default function MapPage() {
       </div>
     </div>
   );
+}
 
-  // 아래는 실제 카카오지도 코드 (현재는 주석 처리)
-  /*
-  useEffect(() => {
-    // 카카오지도 API 스크립트 로드
-    const loadKakaoMap = () => {
-      if (window.kakao && window.kakao.maps) {
-        // API가 이미 로드된 경우
-        window.kakao.maps.load(() => {
-          initMap();
-        });
-      } else {
-        const script = document.createElement('script');
-        const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY || '07b8ff7ced4732d58db45786c59dd88e';
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
-        script.onload = () => {
-          // API가 로드된 후 kakao.maps.load() 호출
-          if (window.kakao && window.kakao.maps) {
-            window.kakao.maps.load(() => {
-              initMap();
-            });
-          }
-        };
-        document.head.appendChild(script);
-      }
-    };
-
-    const initMap = () => {
-      if (!mapRef.current || !window.kakao || !window.kakao.maps) {
-        console.log('카카오지도 API가 로드되지 않았습니다.');
-        return;
-      }
-
-      try {
-        const mapContainer = mapRef.current;
-        const mapOption = { 
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 서울시청
-          level: 3 // 지도의 확대 레벨
-        };
-
-        // 지도를 표시할 div와 지도 옵션으로 지도를 생성합니다
-        const map = new window.kakao.maps.Map(mapContainer, mapOption);
-        
-        // 마커 추가
-        const markerPosition = new window.kakao.maps.LatLng(37.5665, 126.9780);
-        const marker = new window.kakao.maps.Marker({
-          position: markerPosition
-        });
-        marker.setMap(map);
-
-        // 인포윈도우 추가
-        const infowindow = new window.kakao.maps.InfoWindow({
-          content: '<div style="padding:5px;font-size:12px;">서울시청</div>'
-        });
-        infowindow.open(map, marker);
-
-        // 지도 클릭 이벤트
-        window.kakao.maps.event.addListener(map, 'click', function(mouseEvent: any) {
-          const latlng = mouseEvent.latLng;
-          console.log('클릭한 위치:', latlng.getLat(), latlng.getLng());
-          
-          // 클릭한 위치에 마커 추가
-          const newMarker = new window.kakao.maps.Marker({
-            position: latlng
-          });
-          newMarker.setMap(map);
-        });
-
-        console.log('카카오지도가 성공적으로 로드되었습니다.');
-      } catch (error) {
-        console.error('카카오지도 초기화 중 오류 발생:', error);
-      }
-    };
-
-    loadKakaoMap();
-  }, []);
-
+export default function MapPage() {
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <button 
-          className={styles.backButton} 
-          onClick={goBack}
-        >
-          ← 뒤로
-        </button>
-        <h1 className={styles.title}>카카오지도</h1>
-        {roomId && <span className={styles.roomId}>방 ID: {roomId}</span>}
-      </div>
-      
-      <div className={styles.mapContainer}>
-        <div 
-          ref={mapRef}
-          className={styles.map}
-        />
-      </div>
-    </div>
+    <Suspense fallback={<div>로딩중...</div>}>
+      <MapPageContent />
+    </Suspense>
   );
-  */
 }

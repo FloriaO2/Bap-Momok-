@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TinderCard from 'react-tinder-card';
 import styles from './tinder.module.css';
+import { Suspense } from 'react';
 
-export default function TinderPage() {
+function TinderPageContent() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [candidates, setCandidates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -342,5 +343,13 @@ export default function TinderPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TinderPage() {
+  return (
+    <Suspense fallback={<div>로딩중...</div>}>
+      <TinderPageContent />
+    </Suspense>
   );
 } 
