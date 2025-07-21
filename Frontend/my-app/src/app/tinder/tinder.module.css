@@ -133,14 +133,13 @@
 
 .directionContainer {
   position: absolute;
+  bottom: 120px;
   left: 0;
   right: 0;
-  top: 67.2%; /* 카드 아래로 내림, 필요시 값 조정 */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  z-index: 10;
 }
 
 .directionRow {

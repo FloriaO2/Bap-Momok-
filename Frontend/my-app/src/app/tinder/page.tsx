@@ -129,7 +129,7 @@ function TinderPageContent() {
       const updateVoteComplete = async () => {
         try {
           await fetch(`${BACKEND_URL}/groups/${groupId}/participants/${participantId}/vote-complete`, {
-            method: 'POST',
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ vote_complete: true })
           });
@@ -142,15 +142,26 @@ function TinderPageContent() {
     }
   }, [groupId, currentCardIndex, candidates.length]);
 
-  // 3초 후 자동 이동 useEffect는 항상 호출
+  // 3초 후 자동 이동 (중복 이동 방지, Hook 규칙 준수)
   useEffect(() => {
-    if (!loading && currentCardIndex >= candidates.length && groupId) {
-      const timer = setTimeout(() => {
-        router.push(`/live-results/${groupId}`);
+    if (currentCardIndex >= candidates.length && groupId) {
+      const timeout = setTimeout(() => {
+        window.location.href = `/live-results/${groupId}`;
       }, 3000);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(timeout);
     }
-  }, [loading, currentCardIndex, candidates.length, groupId, router]);
+  }, [currentCardIndex, candidates.length, groupId, router]);
+
+  // 이미 투표 완료한 참가자는 투표창에 진입하지 못하게 함
+  useEffect(() => {
+    if (!groupData || !groupId) return;
+    const participantId = sessionStorage.getItem(`participant_id_${groupId}`);
+    if (!participantId) return;
+    const participant = groupData.participants?.[participantId];
+    if (participant && participant.vote_complete) {
+      router.replace(`/live-results/${groupId}`);
+    }
+  }, [groupData, groupId, router]);
 
   if (loading) {
     return (
@@ -166,6 +177,7 @@ function TinderPageContent() {
     );
   }
 
+  // 카드가 끝났을 때 또는 후보가 아예 없을 때
   if (currentCardIndex >= candidates.length) {
     return (
       <div className={styles.container}>
@@ -245,27 +257,25 @@ function TinderPageContent() {
             </TinderCard>
           </div>
           
-          {/* 방향 안내 - 십자가(크로스) 형태 */}
-          <div className={styles.directionContainer} style={{ gap: 0, marginTop: 60 }}>
-            {/* 위쪽(⬆️/쏘쏘) */}
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', marginBottom: 2 }}>
-              <div className={styles.directionText} style={{ fontSize: 13, lineHeight: 1 }}>⬆️</div>
-              <div className={styles.directionText} style={{ marginTop: 0 }}>쏘쏘</div>
+          {/* 방향 안내 */}
+          <div className={styles.directionContainer}>
+            <div className={styles.directionRow}>
+              <div className={styles.directionItem}>
+                <span className={styles.directionText}>⬆️ 쏘쏘</span>
+              </div>
             </div>
-            {/* 가운데(좌/우) */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: 160, margin: '0 auto', marginBottom: 2, gap: 0 }}>
-              <div className={styles.directionItem} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <div className={styles.directionRow}>
+              <div className={styles.directionItem}>
                 <span className={styles.directionText}>⬅️ 싫어요</span>
               </div>
-              <div style={{ flex: 0.2 }}></div>
-              <div className={styles.directionItem} style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <div className={styles.directionItem}>
                 <span className={styles.directionText}>좋아요 ➡️</span>
               </div>
             </div>
-            {/* 아래쪽(절대 안돼/⬇️) */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 2 }}>
-              <div className={styles.directionText} style={{ marginBottom: 0 }}>절대 안돼</div>
-              <div className={styles.directionText} style={{ fontSize: 13, lineHeight: 1 }}>⬇️</div>
+            <div className={styles.directionRow}>
+              <div className={styles.directionItem}>
+                <span className={styles.directionText}>절대 안돼 ⬇️</span>
+              </div>
             </div>
           </div>
           
@@ -284,6 +294,44 @@ function TinderPageContent() {
             display: 'flex',
             gap: '10px'
           }}>
+            <button 
+              onClick={() => { 
+                if (groupId) {
+                  window.location.href = `/live-results/${groupId}`;
+                } else {
+                  alert('groupId가 없습니다!');
+                }
+              }}
+              style={{
+                background: '#28a745',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(40, 167, 69, 0.3)'
+              }}
+            >
+              실시간 결과
+            </button>
+            <button 
+              onClick={viewResults}
+              style={{
+                background: '#dc3545',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(220, 53, 69, 0.3)'
+              }}
+            >
+              최종 결과
+            </button>
           </div>
         </div>
       </div>

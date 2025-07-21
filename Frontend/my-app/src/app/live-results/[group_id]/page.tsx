@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { database } from "@/firebase";
 import { ref, onValue, off } from "firebase/database";
+import { useRouter } from "next/navigation";
 
 // participate 페이지와 동일한 firebaseConfig 사용
 export default function LiveResultsPage() {
@@ -13,6 +14,19 @@ export default function LiveResultsPage() {
   const [groupData, setGroupData] = useState<any>(null);
   const [votingProgress, setVotingProgress] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    // live-results 진입 시 vote_complete를 true로 강제 변경
+    const participantId = typeof window !== 'undefined' ? sessionStorage.getItem(`participant_id_${groupId}`) : null;
+    if (groupId && participantId) {
+      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/groups/${groupId}/participants/${participantId}/vote-complete`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote_complete: true })
+      });
+    }
+  }, [groupId]);
 
   useEffect(() => {
     if (!groupId) return;
