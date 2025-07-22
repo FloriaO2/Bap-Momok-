@@ -17,17 +17,23 @@ export default function AppleIcon() {
       // ImageResponse JSX element
       <div
         style={{
-          fontSize: 180,
-          background: 'linear-gradient(135deg, #994d52 0%, #8a4449 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: '32px',
+          background: 'transparent',
         }}
       >
-        🍽️
+        <img
+          src="https://bap-momok.vercel.app/logo.png"
+          alt="밥모임"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+          }}
+        />
       </div>
     ),
     // ImageResponse options

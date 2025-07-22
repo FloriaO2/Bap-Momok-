@@ -17,20 +17,24 @@ export default function Icon() {
       // ImageResponse JSX element
       <div
         style={{
-          fontSize: 96,
-          background: 'linear-gradient(135deg, #994d52 0%, #8a4449 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: '16px',
-          color: 'white',
-          fontWeight: 'bold',
+          background: 'transparent',
         }}
-              >
-          밥
-        </div>
+      >
+        <img
+          src="https://bap-momok.vercel.app/logo.png"
+          alt="밥모임"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+          }}
+        />
+      </div>
     ),
     // ImageResponse options
     {
