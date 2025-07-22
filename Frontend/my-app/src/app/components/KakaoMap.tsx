@@ -89,7 +89,7 @@ const KakaoMap = ({ onLocationChange, searchKeyword, centerLat, centerLng, onMap
           const lng = parseFloat(place.x);
           // @ts-ignore
           const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
-          mapInstance.current.panTo(moveLatLng);
+          mapInstance.current.setCenter(moveLatLng);
           if (onLocationChange) onLocationChange(lat, lng);
         } else {
           // 검색 결과 없음
@@ -112,7 +112,7 @@ const KakaoMap = ({ onLocationChange, searchKeyword, centerLat, centerLng, onMap
       const kakao = window.kakao;
       // @ts-ignore
       const moveLatLng = new kakao.maps.LatLng(centerLat, centerLng);
-      mapInstance.current.panTo(moveLatLng);
+      mapInstance.current.setCenter(moveLatLng);
     }
   }, [centerLat, centerLng]);
 
