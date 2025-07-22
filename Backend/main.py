@@ -529,7 +529,7 @@ def get_best_couple(group_id: str):
         raise HTTPException(status_code=400, detail="후보가 2명 이상이어야 합니다")
 
     # 투표값을 벡터로 변환
-    vote_map = {"good": 1, "soso": 0, "bad": -1, "never": -2}
+    vote_map = {"good": 3, "soso": 1, "bad": -1, "never": -3}
     participant_vectors = {}
     for pid, vote_dict in group.votes.items():
         vec = []
