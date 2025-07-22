@@ -6,6 +6,8 @@ import TinderCard from 'react-tinder-card';
 import styles from './tinder.module.css';
 import { Suspense } from 'react';
 import Image from "next/image";
+import { ref, onValue, off } from 'firebase/database';
+import { database } from '../../firebase';
 
 const getEmojiForCandidate = (candidate: any): string => {
   if (candidate.type === 'custom') {
@@ -193,12 +195,12 @@ function TinderPageContent() {
   useEffect(() => {
     if (!loading && candidates.length === 0 && groupId) {
       // 후보가 하나도 없으면 바로 live-results로 이동
-      window.location.href = `/live-results/${groupId}`;
+      router.push(`/live-results/${groupId}`);
       return;
     }
     if (!loading && currentCardIndex >= candidates.length && groupId) {
       const timeout = setTimeout(() => {
-        window.location.href = `/live-results/${groupId}`;
+        router.push(`/live-results/${groupId}`);
       }, 3000);
       return () => clearTimeout(timeout);
     }
@@ -213,7 +215,7 @@ function TinderPageContent() {
           .then(res => res.json())
           .then(data => {
             if (data.vote_complete) {
-              window.location.href = `/live-results/${groupId}`;
+              router.push(`/live-results/${groupId}`);
             }
           })
           .catch(err => {
@@ -222,6 +224,22 @@ function TinderPageContent() {
       }, 3000);
       return () => clearInterval(interval);
     }
+  }, [groupId]);
+
+  // 후보 실시간 감지 (Firebase)
+  useEffect(() => {
+    if (!groupId) return;
+    const candidatesRef = ref(database, `groups/${groupId}/candidates`);
+    const candidatesCallback = (snapshot: any) => {
+      const data = snapshot.val() || {};
+      const candidatesArray = Object.entries(data).map(([id, candidate]: [string, any]) => ({
+        id,
+        ...candidate
+      }));
+      setCandidates(candidatesArray);
+    };
+    onValue(candidatesRef, candidatesCallback);
+    return () => off(candidatesRef, "value", candidatesCallback);
   }, [groupId]);
 
   if (loading) {

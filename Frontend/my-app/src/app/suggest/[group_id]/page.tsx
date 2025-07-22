@@ -34,7 +34,13 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
     if (!groupId) return;
 
     const candidatesRef = ref(database, `groups/${groupId}/candidates`);
-    const unsubscribe = onValue(candidatesRef, (snapshot) => {
+    const candidatesCallback = (snapshot: any) => {
+      // 현재 URL이 /suggest/로 시작하지 않으면 콜백 즉시 종료
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/suggest/")) {
+        console.log("❌ 현재 페이지가 suggest가 아님. 리스너 콜백 종료");
+        return;
+      }
+      console.log('⚡ 후보 리스너 작동함!', groupId);
       const candidatesData = snapshot.val();
       if (candidatesData) {
         const allCandidates = Object.values(candidatesData);
@@ -50,10 +56,15 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
         setRegisteredYogiyoIds(yogiyoIds);
         setRegisteredKakaoIds(kakaoIds);
       }
-    });
+    };
+    onValue(candidatesRef, candidatesCallback);
+    console.log('✅ 후보 리스너 등록됨!', groupId);
 
     // 컴포넌트가 언마운트될 때 리스너 정리
-    return () => off(candidatesRef, "value", unsubscribe);
+    return () => {
+      console.log('🔥 후보 리스너 해제됨!', groupId);
+      off(candidatesRef, "value", candidatesCallback);
+    };
   }, [groupId]);
 
   // 그룹 데이터에서 선택된 옵션 확인

@@ -52,25 +52,27 @@ const SuggestCompleteWaitScreen: React.FC<SuggestCompleteWaitScreenProps> = ({ g
   useEffect(() => {
     // 파이어베이스 realtimeDB에서 참가자 목록 구독
     const participantsRef = ref(database, `groups/${groupId}/participants`);
-    const unsubscribe = onValue(participantsRef, (snapshot) => {
+    const participantsCallback = (snapshot: any) => {
       const data = snapshot.val() || {};
       setParticipants(data);
       const allDone = Object.values(data).length > 0 && Object.values(data).every((p: any) => p.suggest_complete);
       setAllComplete(allDone);
       if (allDone) router.push(`/tinder?group_id=${groupId}`);
-    });
-    return () => off(participantsRef, "value", unsubscribe);
+    };
+    onValue(participantsRef, participantsCallback);
+    return () => off(participantsRef, "value", participantsCallback);
   }, [groupId, router]);
 
   useEffect(() => {
     // 실시간 후보 목록 구독
     const candidatesRef = ref(database, `groups/${groupId}/candidates`);
-    const unsubscribe = onValue(candidatesRef, (snapshot) => {
+    const candidatesCallback = (snapshot: any) => {
       const data = snapshot.val() || {};
       const candidatesArray = Object.values(data);
       setCandidates(candidatesArray as Candidate[]);
-    });
-    return () => off(candidatesRef, "value", unsubscribe);
+    };
+    onValue(candidatesRef, candidatesCallback);
+    return () => off(candidatesRef, "value", candidatesCallback);
   }, [groupId]);
 
   useEffect(() => {

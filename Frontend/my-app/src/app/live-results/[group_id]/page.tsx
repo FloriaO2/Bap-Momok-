@@ -57,12 +57,6 @@ export default function LiveResultsPage() {
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 3000);
-
-    return () => {
-      off(candidatesRef, "value", unsubscribe);
-      clearInterval(interval);
-    };
   }, [groupId]);
 
   console.log("candidates state:", candidates);
