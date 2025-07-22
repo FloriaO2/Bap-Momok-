@@ -384,7 +384,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
             color: "#333", 
             marginBottom: "15px"
           }}>
-            검색 결과
+            음식점 목록
           </h3>
           
           {loading ? (

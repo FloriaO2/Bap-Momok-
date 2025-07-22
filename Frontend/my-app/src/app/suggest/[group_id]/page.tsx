@@ -138,7 +138,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
             setTimeLeft(`${seconds}초`);
           }
         } else {
-          setTimeLeft("투표 종료");
+          setTimeLeft("후보 제안 시간 종료");
           // 투표 시간이 끝나면 3초 후 결과 화면으로 이동
           setTimeout(() => {
             router.push(`/live-results/${groupId}`);
@@ -293,7 +293,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
           </h1>
           
           {/* 투표 시간 */}
-          <div style={{ marginBottom: "30px" }}>
+          <div style={{ marginBottom: "30px", textAlign: "center" }}>
             <div style={{ 
               fontSize: "16px", 
               color: "#666", 
@@ -304,17 +304,17 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
             <div style={{ 
               fontSize: "20px", 
               fontWeight: "bold", 
-              color: timeLeft === "투표 종료" ? "#dc3545" : "#333" 
+              color: timeLeft === "후보 제안 시간 종료" ? "#dc3545" : "#333" 
             }}>
               {timeLeft}
             </div>
-            {timeLeft === "투표 종료" && (
+            {timeLeft === "후보 제안 시간 종료" && (
               <div style={{ 
                 fontSize: "14px", 
                 color: "#dc3545", 
                 marginTop: "5px" 
               }}>
-                결과 화면으로 이동합니다...
+                투표 화면으로 이동합니다.
               </div>
             )}
             {/* 진행바 */}
@@ -329,7 +329,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
               <div style={{ 
                 width: `${getProgressPercentage()}%`, 
                 height: "100%", 
-                background: timeLeft === "투표 종료" 
+                background: timeLeft === "후보 제안 시간 종료" 
                   ? "linear-gradient(90deg, #dc3545, #c82333)" 
                   : "linear-gradient(90deg, #667eea, #764ba2)", 
                 borderRadius: "4px",

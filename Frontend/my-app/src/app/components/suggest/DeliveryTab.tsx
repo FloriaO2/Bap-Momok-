@@ -243,7 +243,7 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
                     <div style={{ fontSize: "16px", fontWeight: "bold", color: "#333", marginBottom: "4px" }}>{r.name}</div>
                     <div style={{ fontSize: "14px", color: "#666", marginBottom: "4px" }}>{r.categories.join(', ')}</div>
                     <div style={{ fontSize: "14px", color: "#666", display: "flex", alignItems: "center", gap: "4px" }}>
-                      ⭐ {r.review_avg} ({r.review_count} 리뷰)
+                      ⭐ {r.review_avg} ({r.review_count} {r.review_count <= 1 ? "review" : "reviews"})
                     </div>
                   </div>
                   {/* + 버튼 */}
