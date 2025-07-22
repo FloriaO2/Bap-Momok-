@@ -21,23 +21,28 @@ interface YogiyoRestaurant {
 }
 
 export default function DeliveryTab({ groupData, groupId, onAddCandidate, registeredCandidateIds = [] }: DeliveryTabProps) {
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  // 기존 상태 제거 및 통합
+  // const [activeCategory, setActiveCategory] = useState('all');
+  // const [searchTerm, setSearchTerm] = useState('');
+  // const [pageNum, setPageNum] = useState(1);
+  // const [showSearchResults, setShowSearchResults] = useState(false);
+  // const [restaurants, setRestaurants] = useState<YogiyoRestaurant[]>([]);
+  // const [hasMore, setHasMore] = useState(true);
+
+  const [params, setParams] = useState({ category: '', searchTerm: '', page: 1 });
   const [restaurants, setRestaurants] = useState<YogiyoRestaurant[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pageNum, setPageNum] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [menuModalOpen, setMenuModalOpen] = useState(false);
   const [menuList, setMenuList] = useState<{name: string, image: string|null}[]>([]);
   const [menuLoading, setMenuLoading] = useState(false);
   const [menuError, setMenuError] = useState<string|null>(null);
-  const [showSearchResults, setShowSearchResults] = useState(false);
   const [placeholder, setPlaceholder] = useState("음식점 검색 (예: 치킨, 피자)");
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const categories = [
-    { id: 'all', name: '전체' },
+    { id: '', name: '전체' },
     { id: '프랜차이즈', name: '프랜차이즈' },
     { id: '치킨', name: '치킨' },
     { id: '피자양식', name: '피자/양식' },
@@ -50,20 +55,22 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
     { id: '카페디저트', name: '카페/디저트' }
   ];
 
-  const fetchRestaurants = useCallback(async (page: number, category: string) => {
+  // API 요청 함수
+  const fetchRestaurants = useCallback(async (params: { category: string; searchTerm: string; page: number }) => {
     setLoading(true);
     try {
-      const categoryParam = category === 'all' ? '' : encodeURIComponent(category);
-      const res = await fetch(`${BACKEND_URL}/groups/${groupId}/yogiyo-restaurants?category=${categoryParam}&page=${page}`);
+      const query = [];
+      if (params.category) query.push(`category=${encodeURIComponent(params.category)}`);
+      if (params.searchTerm) query.push(`search=${encodeURIComponent(params.searchTerm)}`);
+      query.push(`page=${params.page}`);
+      const res = await fetch(`${BACKEND_URL}/groups/${groupId}/yogiyo-restaurants?${query.join('&')}`);
       if (!res.ok) {
         throw new Error('Failed to fetch restaurants');
       }
       const data = await res.json();
       const newRestaurants = data.restaurants || [];
-      
-      setRestaurants(prev => page === 1 ? newRestaurants : [...prev, ...newRestaurants]);
+      setRestaurants(prev => params.page === 1 ? newRestaurants : [...prev, ...newRestaurants]);
       setHasMore(newRestaurants.length > 0);
-
     } catch (error) {
       console.error("Error fetching restaurants:", error);
       setHasMore(false);
@@ -72,36 +79,34 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
     }
   }, [groupId, BACKEND_URL]);
 
+  // params가 바뀔 때마다 항상 API 요청
   useEffect(() => {
-    setRestaurants([]);
-    setPageNum(1);
-    setHasMore(true);
-    fetchRestaurants(1, activeCategory);
-  }, [activeCategory, fetchRestaurants]);
+    fetchRestaurants(params);
+  }, [params, fetchRestaurants]);
 
+  // 카테고리 선택 시
+  const handleCategory = (category: string) => {
+    setParams(prev => ({ ...prev, category, page: 1 }));
+  };
 
-  const loadMore = () => {
-    if (!loading && hasMore) {
-      const nextPage = pageNum + 1;
-      setPageNum(nextPage);
-      fetchRestaurants(nextPage, activeCategory);
+  // 검색어 입력 상태
+  const [searchInput, setSearchInput] = useState('');
+  // 더보기 버튼 클릭 여부 상태
+  const [isLoadMore, setIsLoadMore] = useState(false);
+
+  // 검색 input 변경 핸들러
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    if (value === '') {
+      setParams(prev => ({ ...prev, searchTerm: '', page: 1 }));
     }
   };
 
-  // 검색 실행 함수
+  // 검색 버튼 클릭 시
   const handleSearch = () => {
-    if (searchTerm.trim()) {
-      setShowSearchResults(true);
-      // 검색어로 필터링된 결과만 표시
-      const filtered = restaurants.filter((r: any) => 
-        r.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setRestaurants(filtered);
-    } else {
-      setShowSearchResults(false);
-      // 검색어가 없으면 원래 카테고리로 다시 로드
-      fetchRestaurants(1, activeCategory);
-    }
+    setParams(prev => ({ ...prev, searchTerm: searchInput, page: 1 }));
+    setIsLoadMore(false);
   };
 
   // 검색어 입력 시 엔터키 처리
@@ -110,6 +115,26 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
       handleSearch();
     }
   };
+
+  // 더보기
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      setParams(prev => ({ ...prev, page: prev.page + 1 }));
+      setIsLoadMore(true);
+    }
+  };
+
+  // 스크롤 맨 위로 이동용 ref
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // 리스트 변동 시(더보기가 아닐 때) 스크롤 맨 위로 이동
+  useEffect(() => {
+    if (!isLoadMore && listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+    // 더보기 이후에는 다시 false로 초기화
+    if (isLoadMore) setIsLoadMore(false);
+  }, [restaurants]);
 
   // id 중복 제거
   const uniqueRestaurants = Array.from(
@@ -191,15 +216,15 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
         {categories.map((category) => (
           <button
             key={category.id}
-            onClick={() => setActiveCategory(category.id)}
+            onClick={() => handleCategory(category.id)}
             style={{
               padding: "8px 0",
               background: "none",
               border: "none",
               fontSize: "14px",
               fontWeight: "600",
-              color: activeCategory === category.id ? "#333" : "#999",
-              borderBottom: activeCategory === category.id ? "2px solid #994d52" : "none",
+              color: params.category === category.id ? "#333" : "#999",
+              borderBottom: params.category === category.id ? "2px solid #994d52" : "none",
               cursor: "pointer",
               whiteSpace: "nowrap"
             }}
@@ -213,8 +238,8 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
         <input
           type="text"
           placeholder={placeholder}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={searchInput}
+          onChange={handleSearchInputChange}
           onKeyPress={handleKeyPress}
           style={{
             width: "100%",
@@ -225,12 +250,11 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
             outline: "none"
           }}
         />
-        {searchTerm && !loading && (
+        {searchInput && !loading && (
           <button
             onClick={() => {
-              setSearchTerm('');
-              setShowSearchResults(false);
-              fetchRestaurants(1, activeCategory);
+              setSearchInput('');
+              setParams(prev => ({ ...prev, searchTerm: '', page: 1 }));
             }}
             style={{
               position: "absolute",
@@ -273,7 +297,9 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
         </button>
       </div>
       {/* 식당 목록 */}
-      <div style={{ height: "calc(100vh - 500px)", minHeight: "200px", maxHeight: "50vh", overflowY: "auto" }}>
+      <div style={{ height: "calc(100vh - 500px)", minHeight: "200px", maxHeight: "50vh", overflowY: "auto" }}
+        ref={listRef}
+      >
         <h3 style={{ fontSize: "18px", fontWeight: "bold", color: "#333", marginBottom: "15px" }}>
           배달 음식점 목록
         </h3>
@@ -355,20 +381,22 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
               </div>
             )}
             {!loading && hasMore && (
-              <div style={{ textAlign: "center", margin: "20px 0" }}>
-                <button onClick={loadMore} style={{
-                  background: "#994d52",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "20px",
-                  padding: "10px 30px",
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}>
-                  더보기
-                </button>
-              </div>
+              params.searchTerm === '' && (
+                <div style={{ textAlign: "center", margin: "20px 0" }}>
+                  <button onClick={loadMore} style={{
+                    background: "#994d52",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "20px",
+                    padding: "10px 30px",
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    cursor: "pointer"
+                  }}>
+                    더보기
+                  </button>
+                </div>
+              )
             )}
           </>
         )}
