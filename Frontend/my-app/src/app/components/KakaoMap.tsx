@@ -89,7 +89,7 @@ const KakaoMap = ({ onLocationChange, searchKeyword, centerLat, centerLng, onMap
           const lng = parseFloat(place.x);
           // @ts-ignore
           const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
-          mapInstance.current.setCenter(moveLatLng);
+          mapInstance.current.panTo(moveLatLng);
           if (onLocationChange) onLocationChange(lat, lng);
         } else {
           // 검색 결과 없음
@@ -112,7 +112,7 @@ const KakaoMap = ({ onLocationChange, searchKeyword, centerLat, centerLng, onMap
       const kakao = window.kakao;
       // @ts-ignore
       const moveLatLng = new kakao.maps.LatLng(centerLat, centerLng);
-      mapInstance.current.setCenter(moveLatLng);
+      mapInstance.current.panTo(moveLatLng);
     }
   }, [centerLat, centerLng]);
 
@@ -132,7 +132,7 @@ const KakaoMap = ({ onLocationChange, searchKeyword, centerLat, centerLng, onMap
           if (window.kakao && window.kakao.maps && mapInstance.current) {
             // @ts-ignore
             const moveLatLng = new window.kakao.maps.LatLng(lat, lng);
-            mapInstance.current.setCenter(moveLatLng);
+            mapInstance.current.panTo(moveLatLng);
             // 부모 콜백 호출
             if (onLocationChange) onLocationChange(lat, lng);
           }
