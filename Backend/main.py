@@ -16,7 +16,7 @@ import requests
 from itertools import combinations
 import threading
 from firebase_admin import db
-from queue import Queue
+from queue import Queue, Empty
 from threading import Thread
 
 # 전역 락 객체 생성
@@ -83,17 +83,69 @@ YOGIYO_APIKEY = "iphoneap"
 
 vote_queue = Queue()
 
-def vote_worker():
-    while True:
-        group_id, user_id, vote = vote_queue.get()
-        try:
-            process_vote(group_id, user_id, vote)
-        except Exception as e:
-            print(f"Vote 처리 중 에러: {e}")
-        finally:
-            vote_queue.task_done()
+def get_batch_for_first_group(vote_queue):
+    batch = []
+    temp = []
+    try:
+        # 1. 큐에서 첫 데이터 꺼내서 기준 group_id 결정
+        first = vote_queue.get(timeout=1)
+        group_id = first[0]
+        batch.append(first)
+        # 2. 큐에 남은 데이터들 검사
+        while True:
+            item = vote_queue.get_nowait()
+            if item[0] == group_id:
+                batch.append(item)
+            else:
+                temp.append(item)
+    except Empty:
+        pass
+    # 3. group_id가 다른 데이터는 다시 큐에 넣기
+    for item in temp:
+        vote_queue.put(item)
+    return group_id, batch
 
-Thread(target=vote_worker, daemon=True).start()
+# 기존 vote_worker를 배치 버전으로 교체
+
+def vote_worker_batch():
+    while True:
+        with global_lock:
+            try:
+                group_id, batch = get_batch_for_first_group(vote_queue)
+            except Exception as e:
+                continue  # 큐가 비어있으면 대기
+            try:
+                group = get_group(group_id)
+                if group is None:
+                    print(f"[vote_worker_batch] 그룹을 찾을 수 없습니다: {group_id}")
+                    continue
+                for _, user_id, vote in batch:
+                    # 기존 process_vote의 투표 반영 로직을 인라인으로 작성
+                    candidate_id = list(vote.keys())[0]
+                    vote_value = vote[candidate_id]
+                    participant_nickname = group.participants.get(user_id, Participant(nickname="알 수 없는 사용자", suggest_complete=False)).nickname
+                    print(f"✅ 투표 기록: [{participant_nickname}({user_id})]님이 [{candidate_id}]에 [{vote_value}] 투표함")
+                    prev_vote = group.votes.get(user_id, {})
+                    prev_vote.update(vote)
+                    group.votes[user_id] = prev_vote
+                    print(f"[vote_worker_batch] votes after update: {group.votes}")
+                    update_candidate_vote_counts(group)
+                    print(f"[vote_worker_batch] candidates after 집계: {group.candidates}")
+                    group.calculate_ranks()
+                    print(f"[vote_worker_batch] candidates after rank calculation: {group.candidates}")
+                    participant = group.participants.get(user_id)
+                    if participant:
+                        participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
+                        print(f"[vote_worker_batch] participant {user_id} voted_count: {participant.voted_count}")
+                update_group(group_id, GroupUpdate(data=group))
+            except Exception as e:
+                print(f"🚨 vote_worker_batch 처리 중 오류 발생: {e}")
+            finally:
+                for _ in batch:
+                    vote_queue.task_done()
+
+# 워커 스레드 실행
+Thread(target=vote_worker_batch, daemon=True).start()
 
 def process_vote(group_id, user_id, vote):
     with global_lock:
