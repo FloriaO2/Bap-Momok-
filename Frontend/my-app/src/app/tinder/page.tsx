@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import TinderCard from 'react-tinder-card';
 import styles from './tinder.module.css';
 import { Suspense } from 'react';
 import Image from "next/image";
@@ -43,6 +42,15 @@ function TinderPageContent() {
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
   const [touchStart, setTouchStart] = useState<{x: number, y: number, time: number} | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<string | null>(null);
+  const [showSwipeText, setShowSwipeText] = useState(false);
+  const [cardPos, setCardPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{x: number, y: number} | null>(null);
+  const [swipeText, setSwipeText] = useState<string | null>(null);
+  const [cardGone, setCardGone] = useState(false);
+  const [cardGoneDir, setCardGoneDir] = useState<string | null>(null);
+  const cardRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => { setIsClient(true); }, []);
 
   // 그룹 데이터와 후보들 가져오기
@@ -121,6 +129,20 @@ function TinderPageContent() {
     setCurrentCardIndex(prev => prev + 1);
   };
 
+  // 카드가 슬라이드되고 있을 때 방향 표시 (실제 슬라이드 거리에 따라)
+  const onSwipeRequirementFulfilled = (direction: string) => {
+    console.log('Swipe requirement fulfilled:', direction);
+    setSwipeDirection(direction);
+    setShowSwipeText(true);
+  };
+
+  // 슬라이드가 취소되었을 때
+  const onSwipeRequirementUnfulfilled = () => {
+    console.log('Swipe requirement unfulfilled');
+    setShowSwipeText(false);
+    setSwipeDirection(null);
+  };
+
   // 카드가 화면을 벗어났을 때
   const onCardLeftScreen = (candidateId: string) => {
     console.log(`${candidateId} 카드가 화면을 벗어났습니다.`);
@@ -183,6 +205,94 @@ function TinderPageContent() {
       handleCardClick(candidate);
     }
     setTouchStart(null);
+  };
+
+  // 카드 드래그 시작
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (cardGone) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - cardPos.x, y: e.clientY - cardPos.y });
+  };
+  // 카드 드래그 중
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging || !dragStart || cardGone) return;
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    setCardPos({ x: newX, y: newY });
+    // 화면 중앙 기준 사분면 판별 (데드존 포함)
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const cardCenterX = rect.left + rect.width / 2;
+      const cardCenterY = rect.top + rect.height / 2;
+      const deadZoneRadius = 250; // 중앙에서 60px 반경 내는 데드존
+      const distanceFromCenter = Math.sqrt(
+        Math.pow(cardCenterX - centerX, 2) + Math.pow(cardCenterY - centerY, 2)
+      );
+      
+      // 데드존 내부면 텍스트 숨김
+      if (distanceFromCenter <= deadZoneRadius) {
+        setSwipeText(null);
+        return;
+      }
+      
+      // 데드존 외부에서만 사분면 판별
+      if (Math.abs(cardCenterX - centerX) > Math.abs(cardCenterY - centerY)) {
+        if (cardCenterX > centerX) setSwipeText('GOOD');
+        else setSwipeText('BAD');
+      } else {
+        if (cardCenterY > centerY) setSwipeText('NEVER');
+        else setSwipeText('SOSO');
+      }
+    }
+  };
+  // 카드 드래그 끝
+  const handlePointerUp = () => {
+    if (!isDragging || cardGone) return;
+    setIsDragging(false);
+    if (!cardRef.current) {
+      setSwipeText(null);
+      setCardPos({ x: 0, y: 0 });
+      return;
+    }
+    // 이동 거리 계산
+    const rect = cardRef.current.getBoundingClientRect();
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const cardCenterX = rect.left + rect.width / 2;
+    const cardCenterY = rect.top + rect.height / 2;
+    const dx = cardCenterX - centerX;
+    const dy = cardCenterY - centerY;
+    const threshold = 120; // px
+    let direction: string | null = null;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      if (dx > threshold) direction = 'right';
+      else if (dx < -threshold) direction = 'left';
+    } else {
+      if (dy > threshold) direction = 'down';
+      else if (dy < -threshold) direction = 'up';
+    }
+    if (direction) {
+      // 투표 처리 & 카드 사라짐 애니메이션
+      setCardGone(true);
+      setCardGoneDir(direction);
+      setSwipeText(null);
+      // 카드가 완전히 사라진 후 다음 카드로
+      setTimeout(() => {
+        setCardGone(false);
+        setCardGoneDir(null);
+        setCardPos({ x: 0, y: 0 });
+        setSwipeText(null);
+        setCurrentCardIndex(prev => prev + 1);
+        // 투표 제출
+        onSwipe(direction, currentCandidate.id);
+      }, 350);
+    } else {
+      // 임계값 미만이면 원위치 복귀
+      setSwipeText(null);
+      setCardPos({ x: 0, y: 0 });
+    }
   };
 
   const goToParticipate = () => {
@@ -317,38 +427,81 @@ function TinderPageContent() {
                 </button>
               </div>
               {isClient && (
-                <TinderCard
-                  key={currentCandidate.id}
-                  onSwipe={(dir) => onSwipe(dir, currentCandidate.id)}
-                  onCardLeftScreen={() => onCardLeftScreen(currentCandidate.id)}
-                  preventSwipe={[]}
-                  swipeThreshold={20}
-                  swipeRequirementType="position"
+                <div
+                  ref={cardRef}
+                  className={styles.card}
+                  style={{
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    position: 'relative',
+                    margin: '0 auto',
+                    transform: cardGone
+                      ? cardGoneDir === 'right' ? 'translateX(600px) rotate(20deg)' :
+                        cardGoneDir === 'left' ? 'translateX(-600px) rotate(-20deg)' :
+                        cardGoneDir === 'up' ? 'translateY(-600px) rotate(-10deg)' :
+                        cardGoneDir === 'down' ? 'translateY(600px) rotate(10deg)' :
+                        `translate(${cardPos.x}px, ${cardPos.y}px)`
+                      : `translate(${cardPos.x}px, ${cardPos.y}px)` ,
+                    opacity: cardGone ? 0 : 1,
+                    transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(.22,1,.36,1), opacity 0.35s',
+                    userSelect: 'none',
+                    touchAction: 'none',
+                  }}
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerLeave={handlePointerUp}
                 >
-                  <div
-                    className={styles.card}
-                    style={{cursor:'pointer', position:'relative', margin: '0 auto'}}
-                  >
-                    <div className={styles.cardEmoji}>
-                      {getEmojiForCandidate(currentCandidate)}
-                    </div>
-                    <div className={styles.cardName}>{currentCandidate.name}</div>
-                    <div className={styles.cardType}>
-                      {currentCandidate.type === 'kakao' ? '카카오맵' : 
-                       currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
-                    </div>
-                    {currentCandidate.detail && (
-                      <div className={styles.cardDetail}>
-                        {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
-                          <div>📍 {currentCandidate.detail.addr}</div>
-                        )}
-                        {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
-                          <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}</div>
-                        )}
+                  {/* 슬라이드 방향 텍스트 오버레이 */}
+                  {swipeText && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '48px',
+                          fontWeight: 'bold',
+                          color: swipeText === 'GOOD' ? '#4CAF50' : 
+                                 swipeText === 'BAD' ? '#F44336' :
+                                 swipeText === 'SOSO' ? '#FF9800' : '#9C27B0',
+                          textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                          opacity: 0.9,
+                        }}
+                      >
+                        {swipeText}
                       </div>
-                    )}
+                    </div>
+                  )}
+                  
+                  <div className={styles.cardEmoji}>
+                    {getEmojiForCandidate(currentCandidate)}
                   </div>
-                </TinderCard>
+                  <div className={styles.cardName}>{currentCandidate.name}</div>
+                  <div className={styles.cardType}>
+                    {currentCandidate.type === 'kakao' ? '카카오맵' : 
+                     currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
+                  </div>
+                  {currentCandidate.detail && (
+                    <div className={styles.cardDetail}>
+                      {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
+                        <div>📍 {currentCandidate.detail.addr}</div>
+                      )}
+                      {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
+                        <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
