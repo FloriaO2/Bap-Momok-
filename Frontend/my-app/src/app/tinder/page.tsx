@@ -54,6 +54,7 @@ function TinderPageContent() {
   useEffect(() => { setIsClient(true); }, []);
   const [votePromises, setVotePromises] = useState<Promise<any>[]>([]);
   const [voteDoneCount, setVoteDoneCount] = useState(0);
+  const [isVoting, setIsVoting] = useState(false);
 
   // 그룹 데이터와 후보들 가져오기
   useEffect(() => {
@@ -81,50 +82,44 @@ function TinderPageContent() {
     fetchGroupData();
   }, [groupId]);
 
-  // 투표 제출 (비동기 Fire-and-forget → 이제는 Promise 관리)
-  const submitVote = (candidateId: string, vote: string) => {
-    if (!groupId) return;
-    
+  // 투표 제출 (isVoting으로 연속 투표 방지)
+  const submitVote = async (candidateId: string, vote: string) => {
+    if (!groupId || isVoting) return;
+    setIsVoting(true);
     const participantId = sessionStorage.getItem(`participant_id_${groupId}`);
     if (!participantId) {
-      console.error('참가자 정보가 없습니다. 다시 참여해주세요.');
+      setIsVoting(false);
       return;
     }
-
     const promise = fetch(`${BACKEND_URL}/groups/${groupId}/votes/${participantId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [candidateId]: vote })
     }).then(res => {
       setVoteDoneCount(count => count + 1);
+      setIsVoting(false);
       return res;
+    }).catch(err => {
+      setIsVoting(false);
+      return err;
     });
     setVotePromises(prev => [...prev, promise]);
+    setCurrentCardIndex(prev => prev + 1);
   };
 
-  // 카드 스와이프 처리
+  // onSwipe에서 isVoting 체크
   const onSwipe = (direction: string, candidateId: string) => {
+    if (isVoting) return;
     let vote = '';
     switch (direction) {
-      case 'right':
-        vote = 'good';
-        break;
-      case 'left':
-        vote = 'bad';
-        break;
-      case 'up':
-        vote = 'soso';
-        break;
-      case 'down':
-        vote = 'never';
-        break;
+      case 'right': vote = 'good'; break;
+      case 'left': vote = 'bad'; break;
+      case 'up': vote = 'soso'; break;
+      case 'down': vote = 'never'; break;
     }
-    
     if (vote) {
       submitVote(candidateId, vote);
     }
-    
-    setCurrentCardIndex(prev => prev + 1);
   };
 
   // 카드가 슬라이드되고 있을 때 방향 표시 (실제 슬라이드 거리에 따라)
@@ -382,7 +377,7 @@ function TinderPageContent() {
   // 방향키로 카드 스와이프 효과
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!candidates.length || currentCardIndex >= candidates.length) return;
+      if (isVoting || !candidates.length || currentCardIndex >= candidates.length) return;
       const currentCandidate = candidates[currentCardIndex];
       if (!currentCandidate) return;
       if (e.key === 'ArrowLeft') {
@@ -397,7 +392,7 @@ function TinderPageContent() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [candidates, currentCardIndex]);
+  }, [candidates, currentCardIndex, isVoting]);
 
   if (loading) {
     return (
