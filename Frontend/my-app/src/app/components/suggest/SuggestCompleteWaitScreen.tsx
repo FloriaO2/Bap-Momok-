@@ -131,6 +131,15 @@ const SuggestCompleteWaitScreen: React.FC<SuggestCompleteWaitScreenProps> = ({ g
           <div style={{ fontSize: "20px", fontWeight: "bold", color: timeLeft === "후보 제안 시간 종료" ? "#dc3545" : "#333" }}>
             {timeLeft}
           </div>
+          {timeLeft === "후보 제안 시간 종료" && (
+            <div style={{ 
+              fontSize: "14px", 
+              color: "#dc3545", 
+              marginTop: "5px" 
+            }}>
+              투표 화면으로 이동합니다.
+            </div>
+          )}
           <div style={{ width: "100%", height: "8px", background: "#f0f0f0", borderRadius: "4px", marginTop: "10px", overflow: "hidden" }}>
             <div style={{
               width: `${progressPercent}%`,

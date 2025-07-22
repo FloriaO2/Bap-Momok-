@@ -278,12 +278,7 @@ function TinderPageContent() {
         <div className={styles.overlay}>
           {/* 헤더 */}
           <div className={styles.cardHeader}>
-            <button 
-              className={styles.backButton}
-              onClick={goToParticipate}
-            >
-              ← 뒤로가기
-            </button>
+            
             <h2 className={styles.cardTitle}>투표하기</h2>
             <span className={styles.progressText}>{currentCardIndex + 1} / {candidates.length}</span>
           </div>
