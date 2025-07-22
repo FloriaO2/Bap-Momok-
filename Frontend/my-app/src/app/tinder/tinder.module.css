@@ -13,6 +13,24 @@
   background-repeat: no-repeat;
 }
 
+@keyframes backgroundMove {
+  0% {
+    background-position: center;
+  }
+  25% {
+    background-position: 10% center;
+  }
+  50% {
+    background-position: center;
+  }
+  75% {
+    background-position: 90% center;
+  }
+  100% {
+    background-position: center;
+  }
+}
+
 .overlay {
   position: absolute;
   top: 0;

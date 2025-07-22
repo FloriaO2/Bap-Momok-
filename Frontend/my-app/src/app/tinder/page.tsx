@@ -277,7 +277,17 @@ function TinderPageContent() {
       // 투표 처리 & 카드 사라짐 애니메이션
       setCardGone(true);
       setCardGoneDir(direction);
+      
+      // 현재 표시된 텍스트를 투표 결과로 사용
+      let voteResult = '';
+      if (swipeText === 'GOOD') voteResult = 'good';
+      else if (swipeText === 'BAD') voteResult = 'bad';
+      else if (swipeText === 'SOSO') voteResult = 'soso';
+      else if (swipeText === 'NEVER') voteResult = 'never';
+      
+      // 텍스트 숨김
       setSwipeText(null);
+      
       // 카드가 완전히 사라진 후 다음 카드로
       setTimeout(() => {
         setCardGone(false);
@@ -285,8 +295,10 @@ function TinderPageContent() {
         setCardPos({ x: 0, y: 0 });
         setSwipeText(null);
         setCurrentCardIndex(prev => prev + 1);
-        // 투표 제출
-        onSwipe(direction, currentCandidate.id);
+        // 실제 투표 결과 제출
+        if (voteResult) {
+          submitVote(currentCandidate.id, voteResult);
+        }
       }, 350);
     } else {
       // 임계값 미만이면 원위치 복귀
@@ -377,7 +389,7 @@ function TinderPageContent() {
         <div 
           className={styles.backgroundImage}
           style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80)'
+            backgroundImage: 'url(/background_img.png)'
           }}
         >
           <div className={styles.overlay}>
@@ -399,7 +411,8 @@ function TinderPageContent() {
       <div 
         className={styles.backgroundImage}
         style={{
-          backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80)'
+          backgroundImage: 'url(/background_img.png)',
+          animation: 'backgroundMove 20s ease-in-out infinite'
         }}
       >
         {/* 오버레이 그라데이션 */}
