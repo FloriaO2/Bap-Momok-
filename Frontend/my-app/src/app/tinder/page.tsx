@@ -364,6 +364,26 @@ function TinderPageContent() {
     return () => off(candidatesRef, "value", candidatesCallback);
   }, [groupId]);
 
+  // 방향키로 카드 스와이프 효과
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!candidates.length || currentCardIndex >= candidates.length) return;
+      const currentCandidate = candidates[currentCardIndex];
+      if (!currentCandidate) return;
+      if (e.key === 'ArrowLeft') {
+        onSwipe('left', currentCandidate.id);
+      } else if (e.key === 'ArrowRight') {
+        onSwipe('right', currentCandidate.id);
+      } else if (e.key === 'ArrowUp') {
+        onSwipe('up', currentCandidate.id);
+      } else if (e.key === 'ArrowDown') {
+        onSwipe('down', currentCandidate.id);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [candidates, currentCardIndex]);
+
   if (loading) {
     return (
       <div className={styles.container}>
