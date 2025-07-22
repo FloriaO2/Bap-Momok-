@@ -320,8 +320,8 @@ function TinderPageContent() {
             <button
               style={{marginTop:'24px', fontSize:'20px', padding:'12px 32px', background:'#994d52', color:'#fff', border:'none', borderRadius:'8px', cursor:'pointer'}}
               onClick={() => {
-                console.log('[결과화면 넘어가기 버튼] 클릭! router.push 실행');
-                router.push(`/live-results/${groupId}`);
+                console.log('[결과화면 넘어가기 버튼] 클릭! window.location.href로 이동');
+                window.location.href = `/live-results/${groupId}`;
               }}
             >
               결과화면 넘어가기
