@@ -109,11 +109,11 @@ def get_batch_for_first_group(vote_queue):
 
 def vote_worker_batch():
     while True:
+        try:
+            group_id, batch = get_batch_for_first_group(vote_queue)
+        except Exception as e:
+            continue  # 큐가 비어있으면 대기
         with global_lock:
-            try:
-                group_id, batch = get_batch_for_first_group(vote_queue)
-            except Exception as e:
-                continue  # 큐가 비어있으면 대기
             try:
                 group = get_group(group_id)
                 if group is None:
