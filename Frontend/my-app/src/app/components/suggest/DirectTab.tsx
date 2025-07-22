@@ -309,36 +309,23 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
       )}
 
       {/* 검색바 */}
-      <div style={{
-        width: "100%",
-        maxWidth: "100%",
-        marginBottom: "20px",
-        position: "relative",
-        padding: "0 8px",
-        boxSizing: "border-box"
-      }}>
-        <div style={{ display: "flex", width: "100%", position: "relative" }}>
-          <div style={{ flex: 1, position: "relative" }}>
-            <input
-              type="text"
-              placeholder={placeholder}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={handleKeyPress}
-              style={{
-                width: "100%",
-                minWidth: 0,
-                padding: "12px 15px",
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px 0 0 8px",
-                fontSize: "16px",
-                outline: "none",
-                color: "#222",
-                background: "#fff",
-                boxSizing: "border-box"
-              }}
-            />
-            {searchTerm && !loading && (
+      <div style={{ marginBottom: "20px", position: "relative" }}>
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={handleKeyPress}
+          style={{
+            width: "100%",
+            padding: "12px 40px 12px 15px",
+            border: "1px solid #e0e0e0",
+            borderRadius: "8px",
+            fontSize: "16px",
+            outline: "none"
+          }}
+        />
+                    {searchTerm && !loading && (
               <button
                 onClick={() => {
                   setSearchTerm('');
@@ -347,7 +334,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
                 }}
                 style={{
                   position: "absolute",
-                  right: "calc(clamp(40px, 18vw, 80px) - 55px)",
+                  right: "calc(clamp(60px, 15vw, 80px) + 25px)",
                   top: "50%",
                   transform: "translateY(-50%)",
                   background: "none",
@@ -360,31 +347,33 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
                 ✕
               </button>
             )}
-          </div>
-          <button
-            className="responsive-search-btn"
-            onClick={() => {
-              setSearchMode('custom');
-              handleSearch(true, 'custom');
-            }}
-            disabled={loading}
-            style={{
-              width: "clamp(40px, 18vw, 80px)",
-              minWidth: "40px",
-              maxWidth: "80px",
-              background: "#994d52",
-              color: "#fff",
-              border: "none",
-              borderRadius: "0 8px 8px 0",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: loading ? "not-allowed" : "pointer",
-              opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? "검색중..." : "검색"}
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            setSearchMode('custom');
+            handleSearch(true, 'custom');
+          }}
+          disabled={loading}
+          style={{
+            position: "absolute",
+            right: "15px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "#994d52",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            padding: "7px clamp(12px, 3vw, 20px)",
+            fontSize: "clamp(12px, 2.5vw, 16px)",
+            fontWeight: "bold",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1,
+            minWidth: "60px",
+            maxWidth: "100px",
+            width: "clamp(60px, 15vw, 80px)"
+          }}
+        >
+          {loading ? "검색중" : "검색"}
+        </button>
       </div>
 
       {/* 검색 결과 목록 */}
@@ -403,12 +392,12 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
             color: "#333", 
             marginBottom: "15px"
           }}>
-            검색 결과
+            음식점 목록
           </h3>
           
           {loading ? (
             <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
-              검색 중...
+              검색
             </div>
           ) : searchResults.length === 0 ? (
             <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>

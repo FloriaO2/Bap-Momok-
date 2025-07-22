@@ -352,7 +352,38 @@ def get_yogiyo_restaurants(
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()  # 200 OK가 아닐 경우 예외 발생
-        return response.json()
+        data = response.json()
+        
+        # 영업 중인 식당만 필터링
+        if 'restaurants' in data:
+            data['restaurants'] = [restaurant for restaurant in data['restaurants'] if restaurant.get('is_open', True)]
+            
+            # 배달 시간 필터링 (그룹의 최대 배달 시간보다 짧은 식당만)
+            if group.delivery_time:
+                filtered_restaurants = []
+                for restaurant in data['restaurants']:
+                    estimated_time = restaurant.get('estimated_delivery_time', '')
+                    if estimated_time:
+                        # "42~57분" 형태에서 최대값(57) 추출
+                        try:
+                            # 숫자들을 추출
+                            import re
+                            numbers = re.findall(r'\d+', estimated_time)
+                            if numbers:
+                                max_delivery_time = max(int(num) for num in numbers)
+                                # 그룹의 최대 배달 시간보다 짧거나 같으면 포함
+                                if max_delivery_time <= group.delivery_time:
+                                    filtered_restaurants.append(restaurant)
+                        except (ValueError, TypeError):
+                            # 파싱 실패 시 기본적으로 포함
+                            filtered_restaurants.append(restaurant)
+                    else:
+                        # estimated_delivery_time이 없으면 기본적으로 포함
+                        filtered_restaurants.append(restaurant)
+                
+                data['restaurants'] = filtered_restaurants
+        
+        return data
     except requests.exceptions.HTTPError as err:
         # 요기요 API에서 4xx 또는 5xx 응답이 올 경우
         raise HTTPException(status_code=err.response.status_code, detail=f"요기요 API 오류: {err.response.text}")

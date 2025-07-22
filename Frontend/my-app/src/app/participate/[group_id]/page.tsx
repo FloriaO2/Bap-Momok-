@@ -24,6 +24,11 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
   const [participants, setParticipants] = useState({});
   const [groupData, setGroupData] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  };
 
   // 투표 마감 시간 계산 및 게이지 업데이트
   useEffect(() => {
@@ -50,8 +55,8 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
             setTimeLeft(`${seconds}초`);
           }
         } else {
-          setTimeLeft("투표 종료");
-          // 투표 시간이 끝나면 3초 후 틴더 화면으로 이동
+          setTimeLeft("후보 제안 시간 종료");
+          // 투표 시간이 끝나면 3초 후 결과 화면으로 이동
           setTimeout(() => {
             window.location.href = `/tinder?group_id=${groupId}`;
           }, 3000);
@@ -156,9 +161,10 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
     const inviteUrl = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`;
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      alert("링크가 복사되었습니다!");
+      showToast("링크가 복사되었습니다!");
     } catch (err) {
       console.error("링크 복사 실패:", err);
+      showToast("링크 복사에 실패했습니다.");
     }
   };
 
@@ -289,6 +295,23 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
       padding: "20px",
       fontFamily: "Arial, sans-serif"
     }}>
+      {toast && (
+        <div style={{
+          position: "fixed",
+          bottom: "40px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#333",
+          color: "#fff",
+          padding: "16px 32px",
+          borderRadius: "24px",
+          fontSize: "16px",
+          zIndex: 9999,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
+        }}>
+          {toast}
+        </div>
+      )}
       {showNicknameModal && (
         <div style={{
           position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
@@ -363,17 +386,17 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
             <div style={{ 
               fontSize: "20px", 
               fontWeight: "bold", 
-              color: timeLeft === "투표 종료" ? "#dc3545" : "#333" 
+              color: timeLeft === "후보 제안 시간 종료" ? "#dc3545" : "#333" 
             }}>
               {timeLeft}
             </div>
-            {timeLeft === "투표 종료" && (
+            {timeLeft === "후보 제안 시간 종료" && (
               <div style={{ 
                 fontSize: "14px", 
                 color: "#dc3545", 
                 marginTop: "5px" 
               }}>
-                결과 화면으로 이동합니다...
+                투표 화면으로 이동합니다.
               </div>
             )}
             {/* 진행바 */}
@@ -388,7 +411,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
               <div style={{ 
                 width: `${getProgressPercentage()}%`, 
                 height: "100%", 
-                background: timeLeft === "투표 종료" 
+                background: timeLeft === "후보 제안 시간 종료" 
                   ? "linear-gradient(90deg, #dc3545, #c82333)" 
                   : "linear-gradient(90deg, #667eea, #764ba2)", 
                 borderRadius: "4px",

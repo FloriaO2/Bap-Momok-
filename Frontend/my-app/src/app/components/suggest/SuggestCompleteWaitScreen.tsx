@@ -77,7 +77,7 @@ const SuggestCompleteWaitScreen: React.FC<SuggestCompleteWaitScreenProps> = ({ g
 
   useEffect(() => {
     // 타이머가 끝나면 자동으로 투표 화면으로 이동
-    if (timeLeft === "투표 종료") {
+    if (timeLeft === "후보 제안 시간 종료") {
       setTimeout(() => {
         router.push(`/tinder?group_id=${groupId}`);
       }, 1000);
@@ -130,14 +130,23 @@ const SuggestCompleteWaitScreen: React.FC<SuggestCompleteWaitScreenProps> = ({ g
           <div style={{ fontSize: "16px", color: "#666", marginBottom: "8px" }}>
             투표까지 남은시간
           </div>
-          <div style={{ fontSize: "20px", fontWeight: "bold", color: timeLeft === "투표 종료" ? "#dc3545" : "#333" }}>
+          <div style={{ fontSize: "20px", fontWeight: "bold", color: timeLeft === "후보 제안 시간 종료" ? "#dc3545" : "#333" }}>
             {timeLeft}
           </div>
+          {timeLeft === "후보 제안 시간 종료" && (
+            <div style={{ 
+              fontSize: "14px", 
+              color: "#dc3545", 
+              marginTop: "5px" 
+            }}>
+              투표 화면으로 이동합니다.
+            </div>
+          )}
           <div style={{ width: "100%", height: "8px", background: "#f0f0f0", borderRadius: "4px", marginTop: "10px", overflow: "hidden" }}>
             <div style={{
               width: `${progressPercent}%`,
               height: "100%",
-              background: timeLeft === "투표 종료"
+              background: timeLeft === "후보 제안 시간 종료"
                 ? "linear-gradient(90deg, #dc3545, #c82333)"
                 : "linear-gradient(90deg, #667eea, #764ba2)",
               borderRadius: "4px",
