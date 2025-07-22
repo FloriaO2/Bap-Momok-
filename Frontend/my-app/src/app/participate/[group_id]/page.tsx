@@ -203,7 +203,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
         content: {
           title: '밥모임에 초대합니다!',
           description: '밥모임 투표에 참여해주세요!',
-          imageUrl: 'https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg', // 임시 이미지, 원하면 변경 가능
+          imageUrl: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`,
           link: {
             mobileWebUrl: inviteUrl,
             webUrl: inviteUrl,
@@ -233,13 +233,15 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
           <meta name="description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
           <meta property="og:title" content="밥모임 - 존재하지 않는 페이지" />
           <meta property="og:description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
-          <meta property="og:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+          <meta property="og:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
+          <meta property="og:image:width" content="512" />
+          <meta property="og:image:height" content="512" />
           <meta property="og:url" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`} />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="밥모임 - 존재하지 않는 페이지" />
           <meta name="twitter:description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
-          <meta name="twitter:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+          <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
         </Head>
         <div style={{ 
           minHeight: "100vh", 
@@ -325,13 +327,15 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
         <meta name="description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
         <meta property="og:title" content="밥모임 - 참여하기" />
         <meta property="og:description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
-        <meta property="og:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
+        <meta property="og:image:width" content="512" />
+        <meta property="og:image:height" content="512" />
         <meta property="og:url" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="밥모임 - 참여하기" />
         <meta name="twitter:description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
-        <meta name="twitter:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" href="/logo.png" />
       </Head>

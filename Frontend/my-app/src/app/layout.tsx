@@ -21,9 +21,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg",
-        width: 1200,
-        height: 630,
+        url: "/logo.png",
+        width: 512,
+        height: 512,
         alt: "밥모임",
       },
     ],
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "밥모임 - 함께 맛있는 음식을 선택하세요",
     description: "밥모임 투표 앱으로 함께 맛있는 음식을 선택해보세요!",
-    images: ["https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg"],
+    images: ["/logo.png"],
   },
   icons: {
     icon: [
