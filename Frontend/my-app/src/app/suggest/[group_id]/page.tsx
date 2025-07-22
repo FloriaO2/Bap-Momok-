@@ -141,7 +141,7 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
           setTimeLeft("후보 제안 시간 종료");
           // 투표 시간이 끝나면 3초 후 결과 화면으로 이동
           setTimeout(() => {
-            router.push(`/live-results/${groupId}`);
+            router.push(`/tinder?group_id=${groupId}`);
           }, 3000);
         }
       }, 1000);

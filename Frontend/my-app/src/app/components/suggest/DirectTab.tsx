@@ -40,6 +40,10 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
   const [isEnd, setIsEnd] = useState(false);
   const [placeholder, setPlaceholder] = useState("음식점 검색 (예: 이태원 맛집)");
 
+  // 스크롤 위치 저장용 ref와 state
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrollPos, setScrollPos] = useState<number | null>(null);
+
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   // 지도가 준비되면 인스턴스 저장
@@ -149,6 +153,10 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
 
   // 검색 실행 (페이지네이션 적용)
   const handleSearch = (resetPage = true, mode: 'default' | 'custom' = searchMode) => {
+    // 더보기(페이지네이션)일 때 스크롤 위치 저장
+    if (!resetPage && listRef.current) {
+      setScrollPos(listRef.current.scrollTop);
+    }
     let keyword = searchTerm.trim();
     if (mode === 'default') keyword = '맛집';
     const nextPage = resetPage ? 1 : page + 1;
@@ -269,6 +277,14 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // 검색 결과가 추가된 후, 스크롤 위치 복원
+  useEffect(() => {
+    if (scrollPos !== null && listRef.current) {
+      listRef.current.scrollTop = scrollPos;
+      setScrollPos(null);
+    }
+  }, [searchResults]);
+
   return (
     <div>
       {/* 지도 표시 */}
@@ -373,11 +389,14 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
 
       {/* 검색 결과 목록 */}
       {showSearchResults && (
-        <div style={{ 
-          marginBottom: "20px",
-          maxHeight: "400px",
-          overflowY: "auto"
-        }}>
+        <div 
+          ref={listRef}
+          style={{ 
+            marginBottom: "20px",
+            maxHeight: "400px",
+            overflowY: "auto"
+          }}
+        >
           <h3 style={{ 
             fontSize: "18px", 
             fontWeight: "bold", 
