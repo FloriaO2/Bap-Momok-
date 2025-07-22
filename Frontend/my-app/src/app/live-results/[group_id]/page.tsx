@@ -30,7 +30,7 @@ export default function LiveResultsPage() {
           (c.good || 0) * 1 +
           (c.soso || 0) * 0 +
           (c.bad || 0) * -2 +
-          (c.never || 0) * -999,
+          (c.never || 0) * -10,
       }));
       arr.sort((a, b) => b.score - a.score);
       arr.forEach((c, i) => (c.rank = i + 1));
