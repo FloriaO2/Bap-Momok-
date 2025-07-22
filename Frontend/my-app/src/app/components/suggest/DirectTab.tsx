@@ -372,7 +372,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
             width: "clamp(60px, 15vw, 80px)"
           }}
         >
-          {loading ? "검색중" : "검색"}
+          {loading ? "검색" : "검색"}
         </button>
       </div>
 

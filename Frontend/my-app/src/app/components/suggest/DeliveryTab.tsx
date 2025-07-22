@@ -31,6 +31,8 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
   const [menuList, setMenuList] = useState<{name: string, image: string|null}[]>([]);
   const [menuLoading, setMenuLoading] = useState(false);
   const [menuError, setMenuError] = useState<string|null>(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [placeholder, setPlaceholder] = useState("음식점 검색 (예: 치킨, 피자)");
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -86,13 +88,32 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
     }
   };
 
-  // 검색 필터
-  const filteredRestaurants = restaurants.filter((r: any) => {
-    return searchTerm === '' || r.name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  // 검색 실행 함수
+  const handleSearch = () => {
+    if (searchTerm.trim()) {
+      setShowSearchResults(true);
+      // 검색어로 필터링된 결과만 표시
+      const filtered = restaurants.filter((r: any) => 
+        r.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setRestaurants(filtered);
+    } else {
+      setShowSearchResults(false);
+      // 검색어가 없으면 원래 카테고리로 다시 로드
+      fetchRestaurants(1, activeCategory);
+    }
+  };
+
+  // 검색어 입력 시 엔터키 처리
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   // id 중복 제거
   const uniqueRestaurants = Array.from(
-    new Map(filteredRestaurants.map(r => [r.id, r])).values()
+    new Map(restaurants.map(r => [r.id, r])).values()
   );
   
   // 카테고리 탭 드래그 스크롤 구현
@@ -114,6 +135,20 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
     if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeft.current - walk;
   };
   const onMouseUp = () => { isDragging.current = false; };
+
+  // 반응형 placeholder 설정
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 440) {
+        setPlaceholder("음식점 검색");
+      } else {
+        setPlaceholder("음식점 검색 (예: 치킨, 피자)");
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // 식당 카드 클릭 시 메뉴 모달 오픈
   const handleCardClick = async (restaurant: YogiyoRestaurant) => {
@@ -177,9 +212,10 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
       <div style={{ marginBottom: "20px", position: "relative" }}>
         <input
           type="text"
-          placeholder="검색어"
+          placeholder={placeholder}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={handleKeyPress}
           style={{
             width: "100%",
             padding: "12px 40px 12px 15px",
@@ -189,12 +225,16 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
             outline: "none"
           }}
         />
-        {searchTerm && (
+        {searchTerm && !loading && (
           <button
-            onClick={() => setSearchTerm('')}
+            onClick={() => {
+              setSearchTerm('');
+              setShowSearchResults(false);
+              fetchRestaurants(1, activeCategory);
+            }}
             style={{
               position: "absolute",
-              right: "15px",
+              right: "calc(clamp(60px, 15vw, 80px) + 25px)",
               top: "50%",
               transform: "translateY(-50%)",
               background: "none",
@@ -207,6 +247,30 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
             ✕
           </button>
         )}
+        <button
+          onClick={handleSearch}
+          disabled={loading}
+          style={{
+            position: "absolute",
+            right: "15px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "#994d52",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            padding: "7px clamp(12px, 3vw, 20px)",
+            fontSize: "clamp(12px, 2.5vw, 16px)",
+            fontWeight: "bold",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1,
+            minWidth: "60px",
+            maxWidth: "100px",
+            width: "clamp(60px, 15vw, 80px)"
+          }}
+        >
+          {loading ? "검색" : "검색"}
+        </button>
       </div>
       {/* 식당 목록 */}
       <div style={{ height: "calc(100vh - 500px)", minHeight: "200px", maxHeight: "50vh", overflowY: "auto" }}>
@@ -217,7 +281,7 @@ export default function DeliveryTab({ groupData, groupId, onAddCandidate, regist
           <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
             식당 정보를 불러오는 중...
           </div>
-        ) : filteredRestaurants.length === 0 && !hasMore ? (
+        ) : uniqueRestaurants.length === 0 && !hasMore ? (
           <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
             식당이 없습니다
           </div>
