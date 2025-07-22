@@ -16,6 +16,8 @@ import requests
 from itertools import combinations
 import threading
 from firebase_admin import db
+from queue import Queue
+from threading import Thread
 
 # 전역 락 객체 생성
 vote_lock = threading.Lock()
@@ -78,6 +80,47 @@ def update_candidate_vote_counts(group):
 YOGIYO_AUTH = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTI4Mzc3OTUsImV4cCI6MTc1Mjg0NDk5NSwicGxhdGZvcm0iOiJZR1kiLCJyb2xlIjoidXNlciIsInN1Yl9pZCI6IjkwMjIxNTQyOSIsImJhc2VfdXJsIjoiaHR0cHM6Ly93d3cueW9naXlvLmNvLmtyIn0.nQzYafM-w33dP5Pc8uRQsbk3CQwQmM4zxuHPRYIF2JSnihhl7PwChpcc7KZuM6y9MRgelIjg3OPjSGFpPrwdMi4AzYA5EYph0mLn0rpWi6T_fLTRsRnso3IUc5EGZSNHoC1UXPopBUEMQi7tNLrDbaxRFtcAc-Q5L3GPP0M3438Xick7DZ648JPtk2nAYKNp-uGhLoYG1VFZw3sIl7dgSyoZhzyvD6pmOhNc1GzhXRFtUdTv8WqAr3aKjmjWq6xpzrzmXu7AHkaMifi1N-lm0-Wi25M6XRukWUI4YIgPd7RmyAadRQh7sJm9pQYxPMVnhfdgthxSmTLsSkomn2izqg"
 YOGIYO_APISECRET = "fe5183cc3dea12bd0ce299cf110a75a2"
 YOGIYO_APIKEY = "iphoneap"
+
+vote_queue = Queue()
+
+def vote_worker():
+    while True:
+        group_id, user_id, vote = vote_queue.get()
+        try:
+            process_vote(group_id, user_id, vote)
+        except Exception as e:
+            print(f"Vote 처리 중 에러: {e}")
+        finally:
+            vote_queue.task_done()
+
+Thread(target=vote_worker, daemon=True).start()
+
+def process_vote(group_id, user_id, vote):
+    with global_lock:
+        try:
+            group = get_group(group_id)
+            if group is None:
+                print(f"[process_vote] 그룹을 찾을 수 없습니다: {group_id}")
+                return
+            candidate_id = list(vote.keys())[0]
+            vote_value = vote[candidate_id]
+            participant_nickname = group.participants.get(user_id, Participant(nickname="알 수 없는 사용자", suggest_complete=False)).nickname
+            print(f"✅ 투표 기록: [{participant_nickname}({user_id})]님이 [{candidate_id}]에 [{vote_value}] 투표함")
+            prev_vote = group.votes.get(user_id, {})
+            prev_vote.update(vote)
+            group.votes[user_id] = prev_vote
+            print(f"[process_vote] votes after update: {group.votes}")
+            update_candidate_vote_counts(group)
+            print(f"[process_vote] candidates after 집계: {group.candidates}")
+            group.calculate_ranks()
+            print(f"[process_vote] candidates after rank calculation: {group.candidates}")
+            participant = group.participants.get(user_id)
+            if participant:
+                participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
+                print(f"[process_vote] participant {user_id} voted_count: {participant.voted_count}")
+            update_group(group_id, GroupUpdate(data=group))
+        except Exception as e:
+            print(f"🚨 process_vote 처리 중 오류 발생: {e}")
 
 @app.get("/")
 def read_root():
@@ -229,35 +272,8 @@ def add_custom_candidate(
 
 @app.post("/groups/{group_id}/votes/{user_id}")
 def add_or_update_vote(group_id: str, user_id: str, vote: dict = Body(...)):
-    with global_lock:
-        try:
-            group = get_group(group_id)
-            if group is None:
-                raise HTTPException(status_code=404, detail="그룹을 찾을 수 없습니다")
-
-            # 투표 내용 로깅
-            candidate_id = list(vote.keys())[0]
-            vote_value = vote[candidate_id]
-            participant_nickname = group.participants.get(user_id, Participant(nickname="알 수 없는 사용자", suggest_complete=False)).nickname
-            print(f"✅ 투표 기록: [{participant_nickname}({user_id})]님이 [{candidate_id}]에 [{vote_value}] 투표함")
-
-            prev_vote = group.votes.get(user_id, {})
-            prev_vote.update(vote)
-            group.votes[user_id] = prev_vote
-            print(f"[add_or_update_vote] votes after update: {group.votes}")
-            update_candidate_vote_counts(group)
-            print(f"[add_or_update_vote] candidates after 집계: {group.candidates}")
-            group.calculate_ranks()
-            print(f"[add_or_update_vote] candidates after rank calculation: {group.candidates}")
-            participant = group.participants.get(user_id)
-            if participant:
-                participant.voted_count = len([v for v in group.votes[user_id].values() if v in ("good", "bad", "never", "soso")])
-                print(f"[add_or_update_vote] participant {user_id} voted_count: {participant.voted_count}")
-            update_group(group_id, GroupUpdate(data=group))
-            return {"message": "투표 내역이 성공적으로 추가/수정되었습니다", "user_id": user_id, "data": group}
-        except Exception as e:
-            print(f"🚨 투표 처리 중 오류 발생: {e}")
-            raise HTTPException(status_code=500, detail="서버 내부 오류")
+    vote_queue.put((group_id, user_id, vote))
+    return {"message": "투표가 큐에 등록되었습니다."}
 
 @app.post("/groups/{group_id}/participants")
 def join_group(group_id: str, join: ParticipantJoin):

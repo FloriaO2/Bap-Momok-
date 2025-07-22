@@ -52,6 +52,8 @@ function TinderPageContent() {
   const [cardGoneDir, setCardGoneDir] = useState<string | null>(null);
   const cardRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => { setIsClient(true); }, []);
+  const [votePromises, setVotePromises] = useState<Promise<any>[]>([]);
+  const [voteDoneCount, setVoteDoneCount] = useState(0);
 
   // 그룹 데이터와 후보들 가져오기
   useEffect(() => {
@@ -79,7 +81,7 @@ function TinderPageContent() {
     fetchGroupData();
   }, [groupId]);
 
-  // 투표 제출 (비동기 Fire-and-forget)
+  // 투표 제출 (비동기 Fire-and-forget → 이제는 Promise 관리)
   const submitVote = (candidateId: string, vote: string) => {
     if (!groupId) return;
     
@@ -89,19 +91,15 @@ function TinderPageContent() {
       return;
     }
 
-    fetch(`${BACKEND_URL}/groups/${groupId}/votes/${participantId}`, {
+    const promise = fetch(`${BACKEND_URL}/groups/${groupId}/votes/${participantId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [candidateId]: vote })
-    }).then(response => {
-      if (!response.ok) {
-        console.error('투표 제출에 실패했습니다.');
-      } else {
-        console.log(`[${participantId}]님이 [${candidateId}]에 [${vote}] 투표함`);
-      }
-    }).catch(error => {
-      console.error('투표 제출 실패:', error);
+    }).then(res => {
+      setVoteDoneCount(count => count + 1);
+      return res;
     });
+    setVotePromises(prev => [...prev, promise]);
   };
 
   // 카드 스와이프 처리
@@ -328,6 +326,23 @@ function TinderPageContent() {
     }
   }, [currentCardIndex, candidates.length, groupId, loading]);
 
+  // 모든 투표가 끝나면 모든 응답을 기다렸다가 live-results로 이동
+  useEffect(() => {
+    if (
+      candidates.length > 0 &&
+      currentCardIndex >= candidates.length &&
+      votePromises.length === candidates.length
+    ) {
+      Promise.all(votePromises).then(() => {
+        router.push(`/live-results/${groupId}`);
+      });
+    }
+  }, [currentCardIndex, candidates.length, votePromises, groupId, router]);
+
+  // 진행률 표시용
+  const totalVotes = candidates.length;
+  const percent = totalVotes > 0 ? Math.round((voteDoneCount / totalVotes) * 100) : 0;
+
   useEffect(() => {
     // 3초마다 투표 완료 여부 확인 후 true면 바로 live-results로 이동
     const participantId = groupId ? sessionStorage.getItem(`participant_id_${groupId}`) : null;
@@ -409,13 +424,19 @@ function TinderPageContent() {
         <div 
           className={styles.backgroundImage}
           style={{
-            backgroundImage: 'url(/background_img.png)'
+            backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80)'
           }}
         >
           <div className={styles.overlay}>
             <div className={styles.completionContainer}>
               <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
-              <p className={styles.completionText}>투표가 완료되었습니다.<br/>잠시후 결과 화면으로 이동합니다.</p>
+              <p className={styles.completionText}>
+                투표가 완료되었습니다.<br/>
+                <span style={{fontWeight:'bold', color:'#994d52', fontSize:'20px'}}>
+                  서버 반영: {voteDoneCount} / {totalVotes} ({percent}%)
+                </span><br/>
+                모든 투표가 서버에 반영되면 결과 화면으로 이동합니다.
+              </p>
             </div>
           </div>
         </div>
