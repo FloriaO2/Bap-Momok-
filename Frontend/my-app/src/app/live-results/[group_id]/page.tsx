@@ -21,7 +21,7 @@ export default function LiveResultsPage() {
     if (!groupId) return;
     // 후보 실시간 업데이트 (Firebase)
     const candidatesRef = ref(database, `groups/${groupId}/candidates`);
-    const unsubscribe = onValue(candidatesRef, (snapshot) => {
+    const candidatesCallback = (snapshot: any) => {
       const data = snapshot.val() || {};
       const arr = Object.entries(data).map(([id, c]: any) => ({
         id,
@@ -35,28 +35,25 @@ export default function LiveResultsPage() {
       arr.sort((a, b) => b.score - a.score);
       arr.forEach((c, i) => (c.rank = i + 1));
       setCandidates(arr);
-    });
-
-    // 투표 진행률 및 그룹 정보 (백엔드)
-    const fetchData = async () => {
-      try {
-        const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-        const groupResponse = await fetch(`${BACKEND_URL}/groups/${groupId}`);
-        const groupData = await groupResponse.json();
-        setGroupData(groupData);
-        // 투표 진행률 계산
-        const participantsObj = groupData.participants || {};
-        const totalParticipants = Object.keys(participantsObj).length;
-        const completedParticipants = Object.values(participantsObj).filter((p: any) => p.vote_complete).length;
-        const progress = totalParticipants > 0 ? (completedParticipants / totalParticipants) * 100 : 0;
-        setVotingProgress(progress);
-      } catch (error) {
-        console.error("데이터 가져오기 실패:", error);
-      } finally {
-        setLoading(false);
-      }
     };
-    fetchData();
+    onValue(candidatesRef, candidatesCallback);
+    // 투표 정보(votes, participants)도 실시간 반영
+    const groupRef = ref(database, `groups/${groupId}`);
+    const groupCallback = (snapshot: any) => {
+      const groupData = snapshot.val() || {};
+      setGroupData(groupData);
+      // 투표 진행률 계산
+      const participantsObj = groupData.participants || {};
+      const totalParticipants = Object.keys(participantsObj).length;
+      const completedParticipants = Object.values(participantsObj).filter((p: any) => p.vote_complete).length;
+      const progress = totalParticipants > 0 ? (completedParticipants / totalParticipants) * 100 : 0;
+      setVotingProgress(progress);
+    };
+    onValue(groupRef, groupCallback);
+    return () => {
+      off(candidatesRef, "value", candidatesCallback);
+      off(groupRef, "value", groupCallback);
+    };
   }, [groupId]);
 
   console.log("candidates state:", candidates);

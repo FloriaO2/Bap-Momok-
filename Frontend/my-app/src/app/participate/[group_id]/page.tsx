@@ -29,6 +29,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   };
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 투표 마감 시간 계산 및 게이지 업데이트
   useEffect(() => {
@@ -117,10 +118,15 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
   }, [groupId]);
 
   const handleNicknameSubmit = async () => {
+    // 이미 등록된 참가자라면 함수 종료
+    if (sessionStorage.getItem(`participant_id_${groupId}`)) {
+      showToast("이미 참가자로 등록되어 있습니다.");
+      return;
+    }
     if (nickname.trim()) {
-      // 닉네임 저장
       sessionStorage.setItem("nickname", nickname.trim());
       try {
+        setIsSubmitting(true); // 중복 제출 방지
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/groups/${groupId}/participants`,
           {
@@ -131,7 +137,6 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
         );
         const result = await response.json();
         if (result.participant_id) {
-          // 참가자 ID 저장
           sessionStorage.setItem(`participant_id_${groupId}`, result.participant_id);
           setShowNicknameModal(false);
         } else {
@@ -139,6 +144,8 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
         }
       } catch (e) {
         alert("에러 발생");
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -288,6 +295,13 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
     );
   }
 
+  useEffect(() => {
+    // 이미 참가자 등록되어 있으면 닉네임 모달 띄우지 않음
+    if (typeof window !== "undefined" && sessionStorage.getItem(`participant_id_${groupId}`)) {
+      setShowNicknameModal(false);
+    }
+  }, [groupId]);
+
   return (
     <div style={{ 
       minHeight: "100vh", 
@@ -340,14 +354,16 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
                 e.target.style.border = '1px solid #ccc';
                 e.target.style.boxShadow = 'none';
               }}
-              onKeyDown={e => { if (e.key === "Enter") handleNicknameSubmit(); }}
+              onKeyDown={e => { if (e.key === "Enter" && !isSubmitting) handleNicknameSubmit(); }}
               autoFocus
+              disabled={isSubmitting}
             />
             <button
               onClick={handleNicknameSubmit}
-              style={{ background: "#994d52", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 16, fontWeight: 600, cursor: "pointer" }}
+              disabled={isSubmitting}
+              style={{ background: "#994d52", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 16, fontWeight: 600, cursor: isSubmitting ? "not-allowed" : "pointer" }}
             >
-              확인
+              {isSubmitting ? "등록 중..." : "확인"}
             </button>
           </div>
         </div>
