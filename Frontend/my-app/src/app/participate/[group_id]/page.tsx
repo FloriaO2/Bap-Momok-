@@ -229,9 +229,9 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
     return (
       <>
         <Head>
-          <title>밥모임 - 존재하지 않는 페이지</title>
+          <title>Bap! Momok? - 존재하지 않는 페이지</title>
           <meta name="description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
-          <meta property="og:title" content="밥모임 - 존재하지 않는 페이지" />
+          <meta property="og:title" content="Bap! Momok? - 존재하지 않는 페이지" />
           <meta property="og:description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
           <meta property="og:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
           <meta property="og:image:width" content="512" />
@@ -239,7 +239,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
           <meta property="og:url" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`} />
           <meta property="og:type" content="website" />
           <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:title" content="밥모임 - 존재하지 않는 페이지" />
+          <meta name="twitter:title" content="Bap! Momok? - 존재하지 않는 페이지" />
           <meta name="twitter:description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
           <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
         </Head>
@@ -323,18 +323,18 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
   return (
     <>
       <Head>
-        <title>밥모임 - 참여하기</title>
-        <meta name="description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
-        <meta property="og:title" content="밥모임 - 참여하기" />
-        <meta property="og:description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
+        <title>Bap! Momok? - 참여하기</title>
+        <meta name="description" content="Bap! Momok? 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
+        <meta property="og:title" content="Bap! Momok? - 참여하기" />
+        <meta property="og:description" content="Bap! Momok? 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
         <meta property="og:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
         <meta property="og:image:width" content="512" />
         <meta property="og:image:height" content="512" />
         <meta property="og:url" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`} />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="밥모임 - 참여하기" />
-        <meta name="twitter:description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
+        <meta name="twitter:title" content="Bap! Momok? - 참여하기" />
+        <meta name="twitter:description" content="Bap! Momok? 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
         <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/logo.png`} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" href="/logo.png" />

@@ -8,6 +8,7 @@ import KakaoMap from './components/KakaoMap';
 export default function HomePage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showRandomModal, setShowRandomModal] = useState(false);
   const [joinRoomInput, setJoinRoomInput] = useState('');
   const router = useRouter();
 
@@ -38,6 +39,16 @@ export default function HomePage() {
   });
   const [showWarning, setShowWarning] = useState(false);
 
+  // Random Room 모달 상태
+  const [randomRoomData, setRandomRoomData] = useState({
+    location: '',
+    delivery: false,
+    deliveryTime: '',
+    visit: false,
+    visitTime: ''
+  });
+  const [showRandomWarning, setShowRandomWarning] = useState(false);
+
   const [searchKeyword, setSearchKeyword] = useState('');
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
@@ -45,7 +56,7 @@ export default function HomePage() {
   const [centerLng, setCenterLng] = useState<number | null>(null);
 
   useEffect(() => {
-    if (showCreateModal) {
+    if (showCreateModal || showRandomModal) {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -63,7 +74,7 @@ export default function HomePage() {
       }
     }
     // eslint-disable-next-line
-  }, [showCreateModal]);
+  }, [showCreateModal, showRandomModal]);
 
   // 방 참여 함수
   const joinRoom = (inputRoomId: string) => {
@@ -91,6 +102,25 @@ export default function HomePage() {
   const closeJoinModal = () => {
     setShowJoinModal(false);
     setJoinRoomInput('');
+  };
+
+  // Random Room 모달 열기
+  const openRandomModal = () => {
+    console.log('Random Room 모달 열기');
+    setShowRandomModal(true);
+  };
+
+  // Random Room 모달 닫기
+  const closeRandomModal = () => {
+    setShowRandomModal(false);
+    setRandomRoomData({
+      location: '',
+      delivery: false,
+      deliveryTime: '',
+      visit: false,
+      visitTime: ''
+    });
+    setShowRandomWarning(false);
   };
 
   // Create Room 모달 열기
@@ -132,12 +162,31 @@ export default function HomePage() {
     });
   };
 
+  // Random Room 데이터 업데이트
+  const updateRandomRoomData = (field: string, value: any) => {
+    setRandomRoomData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // delivery나 visit가 선택되면 경고 메시지 숨김
+      if (field === 'delivery' || field === 'visit') {
+        if (newData.delivery || newData.visit) {
+          setShowRandomWarning(false);
+        }
+      }
+      
+      return newData;
+    });
+  };
+
   // 방 생성 함수
   const createRoom = async () => {
     console.log('방 생성 데이터:', createRoomData);
     
     if (!createRoomData.startTime) {
-      alert('후보군 추천 시간을 선택해주세요.');
+      alert('후보 추천 시간을 선택해주세요.');
       return;
     }
     if (locationLat === null || locationLng === null) {
@@ -206,6 +255,77 @@ export default function HomePage() {
     closeCreateModal();
   };
 
+  // Random Room 생성 함수
+  const createRandomRoom = async () => {
+    console.log('Random Room 생성 데이터:', randomRoomData);
+    
+    if (locationLat === null || locationLng === null) {
+      alert('지도의 위치를 지정해주세요.');
+      return;
+    }
+    
+    // delivery와 visit 중 하나는 반드시 선택해야 함
+    if (!randomRoomData.delivery && !randomRoomData.visit) {
+      setShowRandomWarning(true);
+      return;
+    }
+    
+    // delivery를 선택했다면 배달 시간도 필수
+    if (randomRoomData.delivery && !randomRoomData.deliveryTime) {
+      alert('최대 배달 소요 시간을 선택해주세요.');
+      return;
+    }
+    
+    // visit를 선택했다면 도보 시간도 필수
+    if (randomRoomData.visit && !randomRoomData.visitTime) {
+      alert('최대 도보 소요 시간을 선택해주세요.');
+      return;
+    }
+
+    // 값 변환
+    const delivery = randomRoomData.delivery;
+    const offline = randomRoomData.visit;
+    const delivery_time = delivery ? Number(randomRoomData.deliveryTime) : 0;
+    const visit_time = offline ? Number(randomRoomData.visitTime) : 0;
+    const radius = offline ? 70 * visit_time : 0; // 방문(오프라인)일 때만 radius 계산
+    const x = locationLat;
+    const y = locationLng;
+
+    const body = {
+      data: {
+        delivery,
+        delivery_time,
+        offline,
+        visit_time,
+        radius,
+        start_votingtime: 0, // 랜덤룸은 투표가 없으므로 0으로 설정
+        state: 'random',
+        x,
+        y
+      }
+    };
+
+    console.log('랜덤룸 생성 요청 데이터:', body);
+
+    try {
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const response = await fetch(`${BACKEND_URL}/groups`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const result = await response.json();
+      if (result.group_id) {
+        router.push(`/random-room/${result.group_id}`);
+      } else {
+        alert('Random Room 생성 실패');
+      }
+    } catch (e) {
+      alert('에러 발생');
+    }
+    closeRandomModal();
+  };
+
   return (
     <div className={styles.container}>
       {/* 배경 이미지 */}
@@ -229,22 +349,23 @@ export default function HomePage() {
                 className={styles.createButton}
                 onClick={openCreateModal}
               >
-                Create Room
+                Vote Room
               </button>
+              {/* Create Room 버튼 */}
               
-              {/* Join Room 버튼 */}
+              {/* Random Room 버튼 */}
               <button 
                 className={styles.joinButton}
-                onClick={openJoinModal}
+                onClick={openRandomModal}
               >
-                Join Room
+                Random Room
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Join Room 모달 */}
+      {/* Random Room 모달 */}
       {showJoinModal && (
         <div className={styles.modalOverlay} onClick={closeJoinModal}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -326,9 +447,9 @@ export default function HomePage() {
               pinButtonType="gps"
             />
 
-            {/* 후보군 추천 시간 */}
+            {/* 후보 추천 시간 */}
             <div className={styles.inputGroup}>
-              <label className={styles.inputLabel}>⏰ 후보군 추천 시간</label>
+              <label className={styles.inputLabel}>⏰ 후보 추천 시간</label>
               <select
                 className={styles.timeSelect}
                 value={createRoomData.startTime}
@@ -426,6 +547,146 @@ export default function HomePage() {
               <button
                 className={styles.modalButton}
                 onClick={closeCreateModal}
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Random Room 모달 */}
+      {showRandomModal && (
+        <div className={styles.modalOverlay} onClick={closeRandomModal}>
+          <div className={styles.createModalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>랜덤룸 생성</h2>
+            
+            {/* 위치 검색 */}
+            <div className={styles.inputGroup}>
+              <label className={styles.inputLabel}>📍 위치 검색</label>
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  setSearchKeyword(randomRoomData.location);
+                }}
+                style={{ display: 'flex', gap: 8 }}
+              >
+                <input
+                  className={styles.modalInput}
+                  type="text"
+                  placeholder="장소, 주소 검색..."
+                  value={randomRoomData.location}
+                  onChange={e => updateRandomRoomData('location', e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="submit"
+                  className={styles.searchButton}
+                >
+                  검색
+                </button>
+              </form>
+            </div>
+
+            {/* 카카오 지도 */}
+            <KakaoMap
+              searchKeyword={searchKeyword}
+              onLocationChange={(lat, lng) => {
+                setLocationLat(lat);
+                setLocationLng(lng);
+                setCenterLat(lat);
+                setCenterLng(lng);
+              }}
+              centerLat={centerLat}
+              centerLng={centerLng}
+              pinButtonType="gps"
+            />
+
+            {/* 필수 선택 안내 */}
+            {showRandomWarning && (
+              <div style={{ 
+                marginBottom: '20px', 
+                padding: '10px', 
+                background: '#fff3cd', 
+                border: '1px solid #ffeaa7', 
+                borderRadius: '8px',
+                fontSize: '14px',
+                color: '#856404'
+              }}>
+                ⚠️ 배달 또는 방문 중 하나는 반드시 선택해주세요.
+              </div>
+            )}
+
+            {/* Delivery 옵션 */}
+            <div className={styles.optionGroup}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input
+                  type="checkbox"
+                  id="random-delivery"
+                  checked={randomRoomData.delivery}
+                  onChange={(e) => updateRandomRoomData('delivery', e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <label htmlFor="random-delivery" className={styles.checkboxLabel}>Delivery</label>
+                {randomRoomData.delivery && (
+                  <select
+                    className={styles.timeSelect}
+                    value={randomRoomData.deliveryTime}
+                    onChange={(e) => updateRandomRoomData('deliveryTime', e.target.value)}
+                    required
+                  >
+                    <option value="">최대 배달 소요 시간</option>
+                    <option value="10">10분</option>
+                    <option value="20">20분</option>
+                    <option value="30">30분</option>
+                    <option value="40">40분</option>
+                    <option value="50">50분</option>
+                    <option value="60">60분</option>
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* Visit 옵션 */}
+            <div className={styles.optionGroup}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input
+                  type="checkbox"
+                  id="random-visit"
+                  checked={randomRoomData.visit}
+                  onChange={(e) => updateRandomRoomData('visit', e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <label htmlFor="random-visit" className={styles.checkboxLabel}>Visit</label>
+                {randomRoomData.visit && (
+                  <select
+                    className={styles.timeSelect}
+                    value={randomRoomData.visitTime}
+                    onChange={(e) => updateRandomRoomData('visitTime', e.target.value)}
+                    required
+                  >
+                    <option value="">최대 도보 소요 시간</option>
+                    <option value="5">5분</option>
+                    <option value="10">10분</option>
+                    <option value="20">20분</option>
+                    <option value="30">30분</option>
+                    <option value="40">40분</option>
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* 버튼들 */}
+            <div className={styles.modalButtonGroup}>
+              <button
+                className={styles.modalButton}
+                onClick={createRandomRoom}
+              >
+                Create Room
+              </button>
+              <button
+                className={styles.modalButton}
+                onClick={closeRandomModal}
               >
                 취소
               </button>

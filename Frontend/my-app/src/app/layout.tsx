@@ -13,10 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "밥모임 - 함께 맛있는 음식을 선택하세요",
+  title: "Bap! Momok? - 함께 맛있는 음식을 선택하세요",
   description: "밥모임 투표 앱으로 함께 맛있는 음식을 선택해보세요!",
   openGraph: {
-    title: "밥모임 - 함께 맛있는 음식을 선택하세요",
+    title: "Bap! Momok? - 함께 맛있는 음식을 선택하세요",
     description: "밥모임 투표 앱으로 함께 맛있는 음식을 선택해보세요!",
     type: "website",
     images: [
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
         url: "/logo.png",
         width: 512,
         height: 512,
-        alt: "밥모임",
+        alt: "Bap! Momok?",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "밥모임 - 함께 맛있는 음식을 선택하세요",
-    description: "밥모임 투표 앱으로 함께 맛있는 음식을 선택해보세요!",
+    title: "Bap! Momok? - 함께 맛있는 음식을 선택하세요",
+    description: "Bap! Momok? 투표 앱으로 함께 맛있는 음식을 선택해보세요!",
     images: ["/logo.png"],
   },
   icons: {
