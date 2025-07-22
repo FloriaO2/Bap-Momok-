@@ -323,12 +323,14 @@ def get_voting_results(group_id: str):
 def get_yogiyo_restaurants(
     group_id: str, 
     category: str = Query("", description="카테고리(선택)"),
-    page: int = Query(1, description="페이지 번호")
+    page: int = Query(1, description="페이지 번호"),
+    search: str = Query("", description="가게 이름 검색어(선택)")
 ):
     """
     그룹의 위치(x, y)로 요기요에서 배달 가능한 식당 전체 정보를 반환합니다.
     category 파라미터로 카테고리 필터링도 지원합니다.
     page 파라미터로 페이지네이션을 지원합니다.
+    search 파라미터로 가게 이름 검색도 지원합니다.
     """
     group = get_group(group_id)
     if group is None:
@@ -338,9 +340,14 @@ def get_yogiyo_restaurants(
     lng = group.y
     items_per_page = 20  # 페이지 당 20개씩
 
-    url = f"https://www.yogiyo.co.kr/api/v2/restaurants?items_per_page={items_per_page}&lat={lat}&lng={lng}&order=rank&page={page}"
-    if category:
-        url += f"&category={category}"
+    if search:
+        # 검색어가 있을 때는 discovery/search/restaurant API 사용
+        url = f"https://api.yogiyo.co.kr/discovery/search/restaurant?incoming_service_type=YGY_WEB&items={items_per_page}&lat={lat}&lng={lng}&order=rank&page={page-1}&search={search}&serving_type=vd"
+    else:
+        url = f"https://www.yogiyo.co.kr/api/v2/restaurants?items_per_page={items_per_page}&lat={lat}&lng={lng}&order=rank&page={page-1}"
+        if category:
+            url += f"&category={category}"
+    print(f"[요기요 API 요청 URL] {url}")
 
     headers = {
         "Authorization": YOGIYO_AUTH,
@@ -353,37 +360,39 @@ def get_yogiyo_restaurants(
         response = requests.get(url, headers=headers)
         response.raise_for_status()  # 200 OK가 아닐 경우 예외 발생
         data = response.json()
-        
+
+        # 응답 구조 통일
+        if search:
+            # discovery/search/restaurant API는 data['restaurant']['restaurants']
+            restaurants = data.get('restaurant', {}).get('restaurants', [])
+        else:
+            # 기존 API는 data['restaurants']
+            restaurants = data.get('restaurants', [])
+
         # 영업 중인 식당만 필터링
-        if 'restaurants' in data:
-            data['restaurants'] = [restaurant for restaurant in data['restaurants'] if restaurant.get('is_open', True)]
-            
-            # 배달 시간 필터링 (그룹의 최대 배달 시간보다 짧은 식당만)
+        if not search:
             if group.delivery_time:
                 filtered_restaurants = []
-                for restaurant in data['restaurants']:
+                for restaurant in restaurants:
                     estimated_time = restaurant.get('estimated_delivery_time', '')
                     if estimated_time:
-                        # "42~57분" 형태에서 최대값(57) 추출
                         try:
-                            # 숫자들을 추출
                             import re
                             numbers = re.findall(r'\d+', estimated_time)
                             if numbers:
                                 max_delivery_time = max(int(num) for num in numbers)
-                                # 그룹의 최대 배달 시간보다 짧거나 같으면 포함
                                 if max_delivery_time <= group.delivery_time:
                                     filtered_restaurants.append(restaurant)
                         except (ValueError, TypeError):
-                            # 파싱 실패 시 기본적으로 포함
                             filtered_restaurants.append(restaurant)
                     else:
-                        # estimated_delivery_time이 없으면 기본적으로 포함
                         filtered_restaurants.append(restaurant)
-                
-                data['restaurants'] = filtered_restaurants
-        
-        return data
+                restaurants = filtered_restaurants
+            # 영업중 필터(기존 API만)
+            restaurants = [restaurant for restaurant in restaurants if restaurant.get('is_open', True)]
+        # 검색 API는 영업중 필터, 배달시간 필터 생략(필요시 추가)
+
+        return {"restaurants": restaurants}
     except requests.exceptions.HTTPError as err:
         # 요기요 API에서 4xx 또는 5xx 응답이 올 경우
         raise HTTPException(status_code=err.response.status_code, detail=f"요기요 API 오류: {err.response.text}")
