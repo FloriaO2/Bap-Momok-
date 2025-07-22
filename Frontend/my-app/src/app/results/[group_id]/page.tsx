@@ -9,8 +9,21 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
   const router = useRouter();
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(0);
 
   useEffect(() => {
+    // 즉시 현재 화면 너비 설정
+    setWindowWidth(window.innerWidth);
+    console.log('Initial window width:', window.innerWidth);
+    
+    const handleResize = () => {
+      const newWidth = window.innerWidth;
+      setWindowWidth(newWidth);
+      console.log('Window resized to:', newWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
     const fetchResults = async () => {
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/groups/${groupId}/results`);
@@ -23,7 +36,21 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
       }
     };
     fetchResults();
+    
+    return () => window.removeEventListener('resize', handleResize);
   }, [groupId]);
+
+  // 화면 크기에 따른 점수 표시 크기 계산
+  const getScoreFontSize = () => {
+    console.log('getScoreFontSize called, windowWidth:', windowWidth);
+    if (windowWidth === 0) {
+      console.log('Window width is 0, returning 14px');
+      return "14px";
+    }
+    const fontSize = windowWidth <= 450 ? "12px" : "14px";
+    console.log(`Window width: ${windowWidth}px, Font size: ${fontSize}`);
+    return fontSize;
+  };
 
   if (loading) {
     return (
@@ -122,13 +149,13 @@ export default function ResultsPage({ params }: { params: Promise<{ group_id: st
                       {candidate.name}
                     </div>
                     <div style={{ 
-                      fontSize: "14px", 
+                      fontSize: "10px", 
                       color: "#666",
                       display: "flex",
                       gap: "15px"
                     }}>
-                      <span>👍 {candidate.good}</span>
-                      <span>👌 {candidate.soso}</span>
+                      <span style={{ fontSize: "10px" }}>👍 {candidate.good}</span>
+                      <span style={{ fontSize: "10px" }}>👌 {candidate.soso}</span>
                     </div>
                   </div>
                   <div style={{ 

@@ -203,7 +203,6 @@ export default function LiveResultsPage() {
                       <VoteDisplay candidateId={c.id} option="never" emoji="🚫" count={c.never || 0} />
                     </div>
                   </div>
-                  <div style={{ fontSize: 16, color: "#994d52", fontWeight: 700 }}>점수: {c.score}</div>
                 </motion.div>
               ))}
             </AnimatePresence>
