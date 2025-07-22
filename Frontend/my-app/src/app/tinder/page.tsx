@@ -342,7 +342,7 @@ function TinderPageContent() {
                           <div>📍 {currentCandidate.detail.addr}</div>
                         )}
                         {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
-                          <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}분</div>
+                          <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}</div>
                         )}
                       </div>
                     )}
