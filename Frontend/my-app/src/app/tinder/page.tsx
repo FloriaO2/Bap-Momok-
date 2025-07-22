@@ -45,6 +45,7 @@ function TinderPageContent() {
   const [isClient, setIsClient] = useState(false);
   const [votePromises, setVotePromises] = useState<Promise<any>[]>([]);
   const [voteDoneCount, setVoteDoneCount] = useState(0);
+  const [showResultButton, setShowResultButton] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 
   // 그룹 데이터와 후보들 가져오기
@@ -218,6 +219,7 @@ function TinderPageContent() {
       console.log('[자동이동 useEffect] 조건 만족! Promise.all 시작');
       Promise.all(votePromises).then(() => {
         console.log('[자동이동 useEffect] 모든 POST 요청 완료! router.push 실행');
+        setShowResultButton(true);
         router.push(`/live-results/${groupId}`);
       }).catch((err) => {
         console.error('[자동이동 useEffect] Promise.all 에러:', err);
@@ -305,18 +307,26 @@ function TinderPageContent() {
     console.log('[렌더] 모든 후보 투표 완료! 완료 메시지 표시');
     return (
       <div className={styles.container}>
-        <div 
-          className={styles.backgroundImage}
-          style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80)'
-          }}
-        >
-          <div className={styles.overlay}>
-            <div className={styles.completionContainer}>
-              <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
-              <p className={styles.completionText}>투표가 완료되었습니다.<br/>잠시후 결과 화면으로 이동합니다.</p>
-            </div>
-          </div>
+        <div className={styles.completionContainer}>
+          <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
+          <p className={styles.completionText}>
+            투표가 완료되었습니다.<br/>
+            <span style={{fontWeight:'bold', color:'#994d52', fontSize:'20px'}}>
+              서버 반영: {voteDoneCount} / {totalVotes} ({percent}%)
+            </span><br/>
+            모든 투표가 서버에 반영되면 결과 화면으로 이동할 수 있습니다.
+          </p>
+          {showResultButton && (
+            <button
+              style={{marginTop:'24px', fontSize:'20px', padding:'12px 32px', background:'#994d52', color:'#fff', border:'none', borderRadius:'8px', cursor:'pointer'}}
+              onClick={() => {
+                console.log('[결과화면 넘어가기 버튼] 클릭! router.push 실행');
+                router.push(`/live-results/${groupId}`);
+              }}
+            >
+              결과화면 넘어가기
+            </button>
+          )}
         </div>
       </div>
     );
