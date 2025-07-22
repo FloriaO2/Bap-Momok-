@@ -50,8 +50,20 @@ function TinderPageContent() {
   const [swipeText, setSwipeText] = useState<string | null>(null);
   const [cardGone, setCardGone] = useState(false);
   const [cardGoneDir, setCardGoneDir] = useState<string | null>(null);
+  const [windowWidth, setWindowWidth] = useState(0);
   const cardRef = React.useRef<HTMLDivElement>(null);
-  useEffect(() => { setIsClient(true); }, []);
+  
+  useEffect(() => { 
+    setIsClient(true); 
+    setWindowWidth(window.innerWidth);
+    
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 그룹 데이터와 후보들 가져오기
   useEffect(() => {
@@ -200,10 +212,16 @@ function TinderPageContent() {
     const dx = Math.abs(t.clientX - touchStart.x);
     const dy = Math.abs(t.clientY - touchStart.y);
     const dt = Date.now() - touchStart.time;
-    // 20px 이하 이동, 500ms 이하면 tap으로 간주
-    if (dx < 20 && dy < 20 && dt < 500) {
-      handleCardClick(candidate);
+    
+    // 카드가 중앙 기본 위치에 있을 때만 터치로 상세정보 표시
+    if (Math.abs(cardPos.x) < 5 && Math.abs(cardPos.y) < 5) {
+      // 10px 이하 이동, 300ms 이하면 tap으로 간주
+      if (dx < 10 && dy < 10 && dt < 300) {
+        handleCardClick(candidate);
+      }
     }
+    // 카드가 중앙에서 벗어나 있으면 드래그로 투표 (기존 로직 유지)
+    
     setTouchStart(null);
   };
 
@@ -226,13 +244,19 @@ function TinderPageContent() {
       const centerY = window.innerHeight / 2;
       const cardCenterX = rect.left + rect.width / 2;
       const cardCenterY = rect.top + rect.height / 2;
-      const deadZoneRadius = 250; // 중앙에서 60px 반경 내는 데드존
+      const deadZoneRadius = Math.min(window.innerWidth * 0.3, window.innerHeight * 0.15); // 화면 크기에 비례한 데드존
       const distanceFromCenter = Math.sqrt(
         Math.pow(cardCenterX - centerX, 2) + Math.pow(cardCenterY - centerY, 2)
       );
       
-      // 데드존 내부면 텍스트 숨김
-      if (distanceFromCenter <= deadZoneRadius) {
+      // 타원형 데드존 체크 (가로/세로 반지름이 다름)
+      const deadZoneRadiusX = window.innerWidth * 0.15; // 가로 반지름
+      const deadZoneRadiusY = window.innerHeight * 0.2; // 세로 반지름
+      const normalizedDistance = Math.pow((cardCenterX - centerX) / deadZoneRadiusX, 2) + 
+                                Math.pow((cardCenterY - centerY) / deadZoneRadiusY, 2);
+      
+      // 타원형 데드존 내부면 텍스트 숨김
+      if (normalizedDistance <= 1) {
         setSwipeText(null);
         return;
       }
@@ -248,61 +272,98 @@ function TinderPageContent() {
     }
   };
   // 카드 드래그 끝
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDragging || cardGone) return;
+    
+    // 카드가 중앙 기본 위치에 있을 때만 클릭으로 간주
+    if (dragStart && Math.abs(cardPos.x) < 5 && Math.abs(cardPos.y) < 5) {
+      const dx = Math.abs(e.clientX - (dragStart.x + cardPos.x));
+      const dy = Math.abs(e.clientY - (dragStart.y + cardPos.y));
+      if (dx < 10 && dy < 10) {
+        // 클릭으로 간주하여 상세정보 표시
+        handleCardClick(currentCandidate);
+        setIsDragging(false);
+        setDragStart(null);
+        setSwipeText(null);
+        setCardPos({ x: 0, y: 0 });
+        return;
+      }
+    }
+    
     setIsDragging(false);
     if (!cardRef.current) {
       setSwipeText(null);
       setCardPos({ x: 0, y: 0 });
       return;
     }
-    // 이동 거리 계산
+    
+    // 타원형 데드존 체크
     const rect = cardRef.current.getBoundingClientRect();
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
     const cardCenterX = rect.left + rect.width / 2;
     const cardCenterY = rect.top + rect.height / 2;
-    const dx = cardCenterX - centerX;
-    const dy = cardCenterY - centerY;
-    const threshold = 120; // px
-    let direction: string | null = null;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      if (dx > threshold) direction = 'right';
-      else if (dx < -threshold) direction = 'left';
-    } else {
-      if (dy > threshold) direction = 'down';
-      else if (dy < -threshold) direction = 'up';
+    const deadZoneRadiusX = window.innerWidth * 0.3; // 가로 반지름
+    const deadZoneRadiusY = window.innerHeight * 0.15; // 세로 반지름
+    const normalizedDistance = Math.pow((cardCenterX - centerX) / deadZoneRadiusX, 2) + 
+                              Math.pow((cardCenterY - centerY) / deadZoneRadiusY, 2);
+    
+    // 타원형 데드존 안에 있으면 투표 없이 원위치로 복귀
+    if (normalizedDistance <= 1) {
+      setSwipeText(null);
+      setCardPos({ x: 0, y: 0 });
+      return;
     }
-    if (direction) {
-      // 투표 처리 & 카드 사라짐 애니메이션
-      setCardGone(true);
-      setCardGoneDir(direction);
+    
+    // 데드존 밖에 있고 텍스트가 표시되어 있을 때만 투표 처리
+    if (swipeText) {
+      const threshold = 120; // px
+      const dx = cardCenterX - centerX;
+      const dy = cardCenterY - centerY;
+      let direction: string | null = null;
       
-      // 현재 표시된 텍스트를 투표 결과로 사용
-      let voteResult = '';
-      if (swipeText === 'GOOD') voteResult = 'good';
-      else if (swipeText === 'BAD') voteResult = 'bad';
-      else if (swipeText === 'SOSO') voteResult = 'soso';
-      else if (swipeText === 'NEVER') voteResult = 'never';
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > threshold) direction = 'right';
+        else if (dx < -threshold) direction = 'left';
+      } else {
+        if (dy > threshold) direction = 'down';
+        else if (dy < -threshold) direction = 'up';
+      }
       
-      // 텍스트 숨김
-      setSwipeText(null);
-      
-      // 카드가 완전히 사라진 후 다음 카드로
-      setTimeout(() => {
-        setCardGone(false);
-        setCardGoneDir(null);
-        setCardPos({ x: 0, y: 0 });
+      if (direction) {
+        // 투표 처리 & 카드 사라짐 애니메이션
+        setCardGone(true);
+        setCardGoneDir(direction);
+        
+        // 현재 표시된 텍스트를 투표 결과로 사용
+        let voteResult = '';
+        if (swipeText === 'GOOD') voteResult = 'good';
+        else if (swipeText === 'BAD') voteResult = 'bad';
+        else if (swipeText === 'SOSO') voteResult = 'soso';
+        else if (swipeText === 'NEVER') voteResult = 'never';
+        
+        // 텍스트 숨김
         setSwipeText(null);
-        setCurrentCardIndex(prev => prev + 1);
-        // 실제 투표 결과 제출
-        if (voteResult) {
-          submitVote(currentCandidate.id, voteResult);
-        }
-      }, 350);
+        
+        // 카드가 완전히 사라진 후 다음 카드로
+        setTimeout(() => {
+          setCardGone(false);
+          setCardGoneDir(null);
+          setCardPos({ x: 0, y: 0 });
+          setSwipeText(null);
+          setCurrentCardIndex(prev => prev + 1);
+          // 실제 투표 결과 제출
+          if (voteResult) {
+            submitVote(currentCandidate.id, voteResult);
+          }
+        }, 500);
+      } else {
+        // 임계값 미만이면 원위치 복귀
+        setSwipeText(null);
+        setCardPos({ x: 0, y: 0 });
+      }
     } else {
-      // 임계값 미만이면 원위치 복귀
-      setSwipeText(null);
+      // 텍스트가 없으면 원위치 복귀
       setCardPos({ x: 0, y: 0 });
     }
   };
@@ -427,95 +488,97 @@ function TinderPageContent() {
           
           {/* 카드 컨테이너 */}
           <div className={styles.cardContainer}>
-            <div style={{width: 320, margin: '0 auto'}}>
-              <div style={{display:'flex', justifyContent:'center', marginBottom: 12}}>
-                <button
-                  onClick={() => handleCardClick(currentCandidate)}
-                  style={{
-                    background: '#fff', color: '#994d52', border: '1px solid #994d52', borderRadius: 8,
-                    fontWeight: 600, fontSize: 14, padding: '6px 14px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-                  }}
-                >
-                  상세정보
-                </button>
-              </div>
-              {isClient && (
-                <div
-                  ref={cardRef}
-                  className={styles.card}
-                  style={{
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    position: 'relative',
-                    margin: '0 auto',
-                    transform: cardGone
-                      ? cardGoneDir === 'right' ? 'translateX(600px) rotate(20deg)' :
-                        cardGoneDir === 'left' ? 'translateX(-600px) rotate(-20deg)' :
-                        cardGoneDir === 'up' ? 'translateY(-600px) rotate(-10deg)' :
-                        cardGoneDir === 'down' ? 'translateY(600px) rotate(10deg)' :
-                        `translate(${cardPos.x}px, ${cardPos.y}px)`
-                      : `translate(${cardPos.x}px, ${cardPos.y}px)` ,
-                    opacity: cardGone ? 0 : 1,
-                    transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(.22,1,.36,1), opacity 0.35s',
-                    userSelect: 'none',
-                    touchAction: 'none',
-                  }}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerLeave={handlePointerUp}
-                >
-                  {/* 슬라이드 방향 텍스트 오버레이 */}
-                  {swipeText && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 10,
-                        pointerEvents: 'none',
-                      }}
-                    >
+            <div style={{width: 320, margin: '0 auto', position: 'relative'}}>
+              {isClient && candidates.slice(currentCardIndex, currentCardIndex + 3).map((candidate, index) => {
+                const isTopCard = index === 0;
+                const cardIndex = currentCardIndex + index;
+                
+                return (
+                  <div
+                    key={candidate.id}
+                    ref={isTopCard ? cardRef : null}
+                    className={styles.card}
+                    style={{
+                      cursor: isTopCard ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: isTopCard 
+                        ? (cardGone
+                            ? cardGoneDir === 'right' ? 'translate(-50%, -50%) translateX(1200px)' :
+                              cardGoneDir === 'left' ? 'translate(-50%, -50%) translateX(-1200px)' :
+                              cardGoneDir === 'up' ? 'translate(-50%, -50%) translateY(-1200px)' :
+                              cardGoneDir === 'down' ? 'translate(-50%, -50%) translateY(1200px)' :
+                              `translate(-50%, -50%) translate(${cardPos.x}px, ${cardPos.y}px)`
+                            : `translate(-50%, -50%) translate(${cardPos.x}px, ${cardPos.y}px)`)
+                        : `translate(-50%, -50%) translateY(${index * 8}px) scale(${1 - index * 0.05})`,
+                      opacity: isTopCard ? (cardGone ? 0 : 1) : 1,
+                      transition: isTopCard ? (isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s') : 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.5s',
+                      userSelect: 'none',
+                      touchAction: 'none',
+                      zIndex: 100 - index,
+                      pointerEvents: isTopCard ? 'auto' : 'none',
+                    }}
+                    onPointerDown={isTopCard ? handlePointerDown : undefined}
+                    onPointerMove={isTopCard ? handlePointerMove : undefined}
+                    onPointerUp={isTopCard ? handlePointerUp : undefined}
+                    onPointerLeave={isTopCard ? handlePointerUp : undefined}
+                    onTouchStart={isTopCard ? handleTouchStart : undefined}
+                    onTouchEnd={isTopCard ? (e) => handleTouchEnd(e, candidate) : undefined}
+                  >
+                    {/* 슬라이드 방향 텍스트 오버레이 */}
+                    {isTopCard && swipeText && (
                       <div
                         style={{
-                          fontSize: '48px',
-                          fontWeight: 'bold',
-                          color: swipeText === 'GOOD' ? '#4CAF50' : 
-                                 swipeText === 'BAD' ? '#F44336' :
-                                 swipeText === 'SOSO' ? '#FF9800' : '#9C27B0',
-                          textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                          opacity: 0.9,
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 10,
+                          pointerEvents: 'none',
                         }}
                       >
-                        {swipeText}
+                        <div
+                          style={{
+                            fontSize: '48px',
+                            fontWeight: 'bold',
+                            color: swipeText === 'GOOD' ? '#4CAF50' : 
+                                   swipeText === 'BAD' ? '#F44336' :
+                                   swipeText === 'SOSO' ? '#FF9800' : '#9C27B0',
+                            textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                            opacity: 0.9,
+                          }}
+                        >
+                          {swipeText}
+                        </div>
                       </div>
+                    )}
+                    
+                    <div className={styles.cardEmoji}>
+                      {getEmojiForCandidate(candidate)}
                     </div>
-                  )}
-                  
-                  <div className={styles.cardEmoji}>
-                    {getEmojiForCandidate(currentCandidate)}
-                  </div>
-                  <div className={styles.cardName}>{currentCandidate.name}</div>
-                  <div className={styles.cardType}>
-                    {currentCandidate.type === 'kakao' ? '카카오맵' : 
-                     currentCandidate.type === 'yogiyo' ? '요기요' : '커스텀'}
-                  </div>
-                  {currentCandidate.detail && (
-                    <div className={styles.cardDetail}>
-                      {currentCandidate.type === 'kakao' && currentCandidate.detail.addr && (
-                        <div>📍 {currentCandidate.detail.addr}</div>
-                      )}
-                      {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
-                        <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}</div>
-                      )}
+                    <div className={styles.cardName}>{candidate.name}</div>
+                    <div className={styles.cardType}>
+                      {candidate.type === 'kakao' ? '카카오맵' : 
+                       candidate.type === 'yogiyo' ? '요기요' : '커스텀'}
                     </div>
-                  )}
-                </div>
-              )}
+                    {candidate.detail && (
+                      <div className={styles.cardDetail}>
+                        {candidate.type === 'kakao' && candidate.detail.addr && (
+                          <div>📍 {candidate.detail.addr}</div>
+                        )}
+                        {candidate.type === 'yogiyo' && candidate.detail.delivery_time && (
+                          <div>⏰ 배달시간: {candidate.detail.delivery_time}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
           
@@ -544,7 +607,10 @@ function TinderPageContent() {
           {/* 안내 텍스트 */}
           <div className={styles.instructionContainer}>
             <p className={styles.instructionText}>
-              카드를 원하는 방향으로 스와이프하여 투표하세요!
+              {windowWidth <= 400
+                ? <>카드를 드래그하여 투표하고,<br />클릭해서 상세정보를 확인하세요!</>
+                : '카드를 드래그하여 투표하고, 클릭해서 상세정보를 확인하세요!'
+              }
             </p>
           </div>
 
