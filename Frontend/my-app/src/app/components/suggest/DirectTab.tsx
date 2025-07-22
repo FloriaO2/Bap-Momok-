@@ -334,7 +334,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
                 }}
                 style={{
                   position: "absolute",
-                  right: "60px",
+                  right: "calc(clamp(60px, 15vw, 80px) + 25px)",
                   top: "50%",
                   transform: "translateY(-50%)",
                   background: "none",
@@ -362,14 +362,17 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
             color: "#fff",
             border: "none",
             borderRadius: "4px",
-            padding: "8px 12px",
-            fontSize: "14px",
+            padding: "7px clamp(12px, 3vw, 20px)",
+            fontSize: "clamp(12px, 2.5vw, 16px)",
             fontWeight: "bold",
             cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.7 : 1
+            opacity: loading ? 0.7 : 1,
+            minWidth: "60px",
+            maxWidth: "100px",
+            width: "clamp(60px, 15vw, 80px)"
           }}
         >
-          {loading ? "검색중..." : "검색"}
+          {loading ? "검색중" : "검색"}
         </button>
       </div>
 
@@ -394,7 +397,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
           
           {loading ? (
             <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
-              검색 중...
+              검색
             </div>
           ) : searchResults.length === 0 ? (
             <div style={{ textAlign: "center", color: "#999", fontSize: "16px", padding: "40px 0" }}>
