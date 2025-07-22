@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, use } from "react";
+import Head from 'next/head';
 // Firebase SDK import
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, off } from "firebase/database";
@@ -226,72 +227,87 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
   // 그룹이 존재하지 않는 경우 표시할 UI
   if (groupNotFound) {
     return (
-      <div style={{ 
-        minHeight: "100vh", 
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        fontFamily: "Arial, sans-serif"
-      }}>
+      <>
+        <Head>
+          <title>밥모임 - 존재하지 않는 페이지</title>
+          <meta name="description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
+          <meta property="og:title" content="밥모임 - 존재하지 않는 페이지" />
+          <meta property="og:description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
+          <meta property="og:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+          <meta property="og:url" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`} />
+          <meta property="og:type" content="website" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="밥모임 - 존재하지 않는 페이지" />
+          <meta name="twitter:description" content="입력하신 그룹 ID가 올바르지 않거나 해당 그룹이 존재하지 않습니다." />
+          <meta name="twitter:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+        </Head>
         <div style={{ 
-          background: "#fff", 
-          borderRadius: "20px", 
-          padding: "40px", 
-          textAlign: "center",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-          maxWidth: "400px",
-          width: "100%"
+          minHeight: "100vh", 
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px",
+          fontFamily: "Arial, sans-serif"
         }}>
           <div style={{ 
-            fontSize: "80px", 
-            marginBottom: "20px"
+            background: "#fff", 
+            borderRadius: "20px", 
+            padding: "40px", 
+            textAlign: "center",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+            maxWidth: "400px",
+            width: "100%"
           }}>
-            🚧
-          </div>
-          <h1 style={{ 
-            fontSize: "24px", 
-            fontWeight: "bold", 
-            color: "#333", 
-            marginBottom: "10px"
-          }}>
-            존재하지 않는 페이지입니다!
-          </h1>
-          <p style={{ 
-            fontSize: "16px", 
-            color: "#666", 
-            marginBottom: "30px"
-          }}>
-            입력하신 그룹 ID가 올바르지 않거나<br />
-            해당 그룹이 존재하지 않습니다.
-          </p>
-          <button
-            onClick={() => window.location.href = '/'}
-            style={{ 
-              background: "#994d52", 
-              color: "#fff", 
-              border: "none", 
-              borderRadius: "25px", 
-              padding: "15px 30px", 
-              fontSize: "16px", 
+            <div style={{ 
+              fontSize: "80px", 
+              marginBottom: "20px"
+            }}>
+              🚧
+            </div>
+            <h1 style={{ 
+              fontSize: "24px", 
               fontWeight: "bold", 
-              cursor: "pointer",
-              transition: "all 0.3s ease"
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "#8a4449";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "#994d52";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            홈으로 가기
-          </button>
+              color: "#333", 
+              marginBottom: "10px"
+            }}>
+              존재하지 않는 페이지입니다!
+            </h1>
+            <p style={{ 
+              fontSize: "16px", 
+              color: "#666", 
+              marginBottom: "30px"
+            }}>
+              입력하신 그룹 ID가 올바르지 않거나<br />
+              해당 그룹이 존재하지 않습니다.
+            </p>
+            <button
+              onClick={() => window.location.href = '/'}
+              style={{ 
+                background: "#994d52", 
+                color: "#fff", 
+                border: "none", 
+                borderRadius: "25px", 
+                padding: "15px 30px", 
+                fontSize: "16px", 
+                fontWeight: "bold", 
+                cursor: "pointer",
+                transition: "all 0.3s ease"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "#8a4449";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "#994d52";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              홈으로 가기
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -303,287 +319,304 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
   }, [groupId]);
 
   return (
-    <div style={{ 
-      minHeight: "100vh", 
-      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-      padding: "20px",
-      fontFamily: "Arial, sans-serif"
-    }}>
-      {toast && (
-        <div style={{
-          position: "fixed",
-          bottom: "40px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "#333",
-          color: "#fff",
-          padding: "16px 32px",
-          borderRadius: "24px",
-          fontSize: "16px",
-          zIndex: 9999,
-          boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
-        }}>
-          {toast}
-        </div>
-      )}
-      {showNicknameModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
-        }}>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 32, minWidth: 300, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <h2 style={{ marginBottom: 16, color: '#222' }}>닉네임을 입력하세요</h2>
-            <input
-              value={nickname}
-              onChange={e => setNickname(e.target.value)}
-              placeholder="닉네임"
-              style={{
-                fontSize: 18,
-                padding: "10px 16px",
-                borderRadius: 8,
-                border: "1px solid #ccc",
-                marginBottom: 16,
-                width: "100%",
-                color: '#222',
-                outline: 'none',
-              }}
-              onFocus={e => {
-                e.target.style.border = '2px solid #994d52';
-                e.target.style.boxShadow = '0 0 0 2px rgba(153,77,82,0.15)';
-              }}
-              onBlur={e => {
-                e.target.style.border = '1px solid #ccc';
-                e.target.style.boxShadow = 'none';
-              }}
-              onKeyDown={e => { if (e.key === "Enter" && !isSubmitting) handleNicknameSubmit(); }}
-              autoFocus
-              disabled={isSubmitting}
-            />
-            <button
-              onClick={handleNicknameSubmit}
-              disabled={isSubmitting}
-              style={{ background: "#994d52", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 16, fontWeight: 600, cursor: isSubmitting ? "not-allowed" : "pointer" }}
-            >
-              {isSubmitting ? "등록 중..." : "확인"}
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {!showNicknameModal && (
-        <div style={{ 
-          maxWidth: "400px", 
-          margin: "0 auto", 
-          background: "#fff", 
-          borderRadius: "20px", 
-          padding: "30px", 
-          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-          textAlign: "center"
-        }}>
-          {/* 제목 */}
-          <h1 style={{ 
-            fontSize: "28px", 
-            fontWeight: "bold", 
-            color: "#333", 
-            marginBottom: "30px",
-            marginTop: "0"
+    <>
+      <Head>
+        <title>밥모임 - 참여하기</title>
+        <meta name="description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
+        <meta property="og:title" content="밥모임 - 참여하기" />
+        <meta property="og:description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
+        <meta property="og:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+        <meta property="og:url" content={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="밥모임 - 참여하기" />
+        <meta name="twitter:description" content="밥모임 투표에 참여해주세요! 함께 맛있는 음식을 선택해보세요." />
+        <meta name="twitter:image" content="https://cdn.pixabay.com/photo/2016/03/05/19/02/abstract-1238247_1280.jpg" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href="/logo.png" />
+      </Head>
+      <div style={{ 
+        minHeight: "100vh", 
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        padding: "20px",
+        fontFamily: "Arial, sans-serif"
+      }}>
+        {toast && (
+          <div style={{
+            position: "fixed",
+            bottom: "40px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#333",
+            color: "#fff",
+            padding: "16px 32px",
+            borderRadius: "24px",
+            fontSize: "16px",
+            zIndex: 9999,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2)"
           }}>
-            Invite
-          </h1>
-
-          {/* 투표까지 남은 시간 */}
-          <div style={{ marginBottom: "30px" }}>
-            <div style={{ 
-              fontSize: "16px", 
-              color: "#666", 
-              marginBottom: "10px" 
-            }}>
-              투표까지 남은시간
-            </div>
-            <div style={{ 
-              fontSize: "20px", 
-              fontWeight: "bold", 
-              color: timeLeft === "후보 제안 시간 종료" ? "#dc3545" : "#333" 
-            }}>
-              {timeLeft}
-            </div>
-            {timeLeft === "후보 제안 시간 종료" && (
-              <div style={{ 
-                fontSize: "14px", 
-                color: "#dc3545", 
-                marginTop: "5px" 
-              }}>
-                투표 화면으로 이동합니다.
-              </div>
-            )}
-            {/* 진행바 */}
-            <div style={{ 
-              width: "100%", 
-              height: "8px", 
-              background: "#f0f0f0", 
-              borderRadius: "4px", 
-              marginTop: "10px",
-              overflow: "hidden"
-            }}>
-              <div style={{ 
-                width: `${getProgressPercentage()}%`, 
-                height: "100%", 
-                background: timeLeft === "후보 제안 시간 종료" 
-                  ? "linear-gradient(90deg, #dc3545, #c82333)" 
-                  : "linear-gradient(90deg, #667eea, #764ba2)", 
-                borderRadius: "4px",
-                transition: "width 0.3s ease"
-              }}></div>
-            </div>
+            {toast}
           </div>
-
-          {/* QR코드 섹션 */}
-          <div style={{ marginBottom: "30px" }}>
-            <h2 style={{ 
-              fontSize: "20px", 
-              fontWeight: "bold", 
-              color: "#333", 
-              marginBottom: "20px" 
-            }}>
-              Room
-            </h2>
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "center", 
-              marginBottom: "20px" 
-            }}>
-              <img 
-                src={generateQRCode(`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`)}
-                alt="QR Code"
-                style={{ 
-                  width: "200px", 
-                  height: "200px", 
-                  borderRadius: "10px",
-                  border: "2px solid #f0f0f0"
+        )}
+        {showNicknameModal && (
+          <div style={{
+            position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+          }}>
+            <div style={{ background: "#fff", borderRadius: 12, padding: 32, minWidth: 300, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <h2 style={{ marginBottom: 16, color: '#222' }}>닉네임을 입력하세요</h2>
+              <input
+                value={nickname}
+                onChange={e => setNickname(e.target.value)}
+                placeholder="닉네임"
+                style={{
+                  fontSize: 18,
+                  padding: "10px 16px",
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  marginBottom: 16,
+                  width: "100%",
+                  color: '#222',
+                  outline: 'none',
                 }}
+                onFocus={e => {
+                  e.target.style.border = '2px solid #994d52';
+                  e.target.style.boxShadow = '0 0 0 2px rgba(153,77,82,0.15)';
+                }}
+                onBlur={e => {
+                  e.target.style.border = '1px solid #ccc';
+                  e.target.style.boxShadow = 'none';
+                }}
+                onKeyDown={e => { if (e.key === "Enter" && !isSubmitting) handleNicknameSubmit(); }}
+                autoFocus
+                disabled={isSubmitting}
               />
+              <button
+                onClick={handleNicknameSubmit}
+                disabled={isSubmitting}
+                style={{ background: "#994d52", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 16, fontWeight: 600, cursor: isSubmitting ? "not-allowed" : "pointer" }}
+              >
+                {isSubmitting ? "등록 중..." : "확인"}
+              </button>
             </div>
-            
-            {/* 링크 */}
-            <div style={{ 
-              background: "#f8f9fa", 
-              borderRadius: "10px", 
-              padding: "15px", 
-              marginBottom: "15px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between"
-            }}>
-              <span style={{ 
-                fontSize: "14px", 
-                color: "#666", 
-                wordBreak: "break-all",
-                flex: 1,
-                textAlign: "left"
-              }}>
-                {`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`}
-              </span>
-              <div style={{ display: "flex", gap: "10px", marginLeft: "10px" }}>
-                <button 
-                  onClick={copyLink}
-                  style={{ 
-                    background: "none", 
-                    border: "none", 
-                    cursor: "pointer",
-                    padding: "5px"
-                  }}
-                >
-                  📋
-                </button>
-                <button 
-                  onClick={shareLink}
-                  style={{ 
-                    background: "none", 
-                    border: "none", 
-                    cursor: "pointer",
-                    padding: "5px"
-                  }}
-                >
-                  📤
-                </button>
-              </div>
-            </div>
-
           </div>
-
-          {/* 멤버 리스트 */}
+        )}
+        
+        {!showNicknameModal && (
           <div style={{ 
-            marginBottom: "30px",
-            textAlign: "left"
+            maxWidth: "400px", 
+            margin: "0 auto", 
+            background: "#fff", 
+            borderRadius: "20px", 
+            padding: "30px", 
+            boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+            textAlign: "center"
           }}>
-            <h3 style={{ 
-              fontSize: "18px", 
+            {/* 제목 */}
+            <h1 style={{ 
+              fontSize: "28px", 
               fontWeight: "bold", 
               color: "#333", 
-              marginBottom: "15px",
-              textAlign: "center"
+              marginBottom: "30px",
+              marginTop: "0"
             }}>
-              참여자 목록 ({Object.keys(participants).length}명)
-            </h3>
-            <div style={{ 
-              maxHeight: "150px", 
-              overflowY: "auto",
-              background: "#f8f9fa",
-              borderRadius: "10px",
-              padding: "15px"
-            }}>
-              {Object.values(participants).length > 0 ? (
-                Object.values(participants).map((p: any, idx) => (
-                  <div key={idx} style={{ 
-                    padding: "8px 0", 
-                    borderBottom: idx < Object.values(participants).length - 1 ? "1px solid #e9ecef" : "none",
-                    fontSize: "14px",
-                    color: "#333"
-                  }}>
-                    👤 {p.nickname}
-                  </div>
-                ))
-              ) : (
+              Invite
+            </h1>
+
+            {/* 투표까지 남은 시간 */}
+            <div style={{ marginBottom: "30px" }}>
+              <div style={{ 
+                fontSize: "16px", 
+                color: "#666", 
+                marginBottom: "10px" 
+              }}>
+                투표까지 남은시간
+              </div>
+              <div style={{ 
+                fontSize: "20px", 
+                fontWeight: "bold", 
+                color: timeLeft === "후보 제안 시간 종료" ? "#dc3545" : "#333" 
+              }}>
+                {timeLeft}
+              </div>
+              {timeLeft === "후보 제안 시간 종료" && (
                 <div style={{ 
-                  textAlign: "center", 
-                  color: "#999", 
-                  fontSize: "14px",
-                  padding: "20px 0"
+                  fontSize: "14px", 
+                  color: "#dc3545", 
+                  marginTop: "5px" 
                 }}>
-                  아직 참여자가 없습니다
+                  투표 화면으로 이동합니다.
                 </div>
               )}
+              {/* 진행바 */}
+              <div style={{ 
+                width: "100%", 
+                height: "8px", 
+                background: "#f0f0f0", 
+                borderRadius: "4px", 
+                marginTop: "10px",
+                overflow: "hidden"
+              }}>
+                <div style={{ 
+                  width: `${getProgressPercentage()}%`, 
+                  height: "100%", 
+                  background: timeLeft === "후보 제안 시간 종료" 
+                    ? "linear-gradient(90deg, #dc3545, #c82333)" 
+                    : "linear-gradient(90deg, #667eea, #764ba2)", 
+                  borderRadius: "4px",
+                  transition: "width 0.3s ease"
+                }}></div>
+              </div>
             </div>
-          </div>
 
-          {/* 제안하러 가기 버튼 */}
-          <button
-            onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/suggest/${groupId}`}
-            style={{ 
-              background: "#dc3545", 
-              color: "#fff", 
-              border: "none", 
-              borderRadius: "25px", 
-              padding: "15px 30px", 
-              fontSize: "16px", 
-              fontWeight: "bold", 
-              cursor: "pointer",
-              width: "100%",
-              boxShadow: "0 4px 15px rgba(220, 53, 69, 0.3)",
-              transition: "all 0.3s ease"
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "#c82333";
-              e.currentTarget.style.transform = "translateY(-2px)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "#dc3545";
-              e.currentTarget.style.transform = "translateY(0)";
-            }}
-          >
-            제안하러 가기
-          </button>
-        </div>
-      )}
-    </div>
+            {/* QR코드 섹션 */}
+            <div style={{ marginBottom: "30px" }}>
+              <h2 style={{ 
+                fontSize: "20px", 
+                fontWeight: "bold", 
+                color: "#333", 
+                marginBottom: "20px" 
+              }}>
+                Room
+              </h2>
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "center", 
+                marginBottom: "20px" 
+              }}>
+                <img 
+                  src={generateQRCode(`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`)}
+                  alt="QR Code"
+                  style={{ 
+                    width: "200px", 
+                    height: "200px", 
+                    borderRadius: "10px",
+                    border: "2px solid #f0f0f0"
+                  }}
+                />
+              </div>
+              
+              {/* 링크 */}
+              <div style={{ 
+                background: "#f8f9fa", 
+                borderRadius: "10px", 
+                padding: "15px", 
+                marginBottom: "15px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
+              }}>
+                <span style={{ 
+                  fontSize: "14px", 
+                  color: "#666", 
+                  wordBreak: "break-all",
+                  flex: 1,
+                  textAlign: "left"
+                }}>
+                  {`${process.env.NEXT_PUBLIC_FRONTEND_URL}/participate/${groupId}`}
+                </span>
+                <div style={{ display: "flex", gap: "10px", marginLeft: "10px" }}>
+                  <button 
+                    onClick={copyLink}
+                    style={{ 
+                      background: "none", 
+                      border: "none", 
+                      cursor: "pointer",
+                      padding: "5px"
+                    }}
+                  >
+                    📋
+                  </button>
+                  <button 
+                    onClick={shareLink}
+                    style={{ 
+                      background: "none", 
+                      border: "none", 
+                      cursor: "pointer",
+                      padding: "5px"
+                    }}
+                  >
+                    📤
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* 멤버 리스트 */}
+            <div style={{ 
+              marginBottom: "30px",
+              textAlign: "left"
+            }}>
+              <h3 style={{ 
+                fontSize: "18px", 
+                fontWeight: "bold", 
+                color: "#333", 
+                marginBottom: "15px",
+                textAlign: "center"
+              }}>
+                참여자 목록 ({Object.keys(participants).length}명)
+              </h3>
+              <div style={{ 
+                maxHeight: "150px", 
+                overflowY: "auto",
+                background: "#f8f9fa",
+                borderRadius: "10px",
+                padding: "15px"
+              }}>
+                {Object.values(participants).length > 0 ? (
+                  Object.values(participants).map((p: any, idx) => (
+                    <div key={idx} style={{ 
+                      padding: "8px 0", 
+                      borderBottom: idx < Object.values(participants).length - 1 ? "1px solid #e9ecef" : "none",
+                      fontSize: "14px",
+                      color: "#333"
+                    }}>
+                      👤 {p.nickname}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ 
+                    textAlign: "center", 
+                    color: "#999", 
+                    fontSize: "14px",
+                    padding: "20px 0"
+                  }}>
+                    아직 참여자가 없습니다
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 제안하러 가기 버튼 */}
+            <button
+              onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/suggest/${groupId}`}
+              style={{ 
+                background: "#dc3545", 
+                color: "#fff", 
+                border: "none", 
+                borderRadius: "25px", 
+                padding: "15px 30px", 
+                fontSize: "16px", 
+                fontWeight: "bold", 
+                cursor: "pointer",
+                width: "100%",
+                boxShadow: "0 4px 15px rgba(220, 53, 69, 0.3)",
+                transition: "all 0.3s ease"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "#c82333";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "#dc3545";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              제안하러 가기
+            </button>
+          </div>
+        )}
+      </div>
+    </>
   );
 } 

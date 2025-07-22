@@ -273,7 +273,7 @@ function TinderPageContent() {
           <div className={styles.overlay}>
             <div className={styles.completionContainer}>
               <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
-              <p className={styles.completionText}>투표가 완료되었습니다.<br/>잠시후 실시간 결과 화면으로 이동합니다.</p>
+              <p className={styles.completionText}>투표가 완료되었습니다.<br/>잠시후 결과 화면으로 이동합니다.</p>
             </div>
           </div>
         </div>
