@@ -183,16 +183,10 @@ function TinderPageContent() {
     const dx = Math.abs(t.clientX - touchStart.x);
     const dy = Math.abs(t.clientY - touchStart.y);
     const dt = Date.now() - touchStart.time;
-    
-    // 카드가 중앙 기본 위치에 있을 때만 터치로 상세정보 표시
-    if (Math.abs(cardPos.x) < 5 && Math.abs(cardPos.y) < 5) {
-      // 10px 이하 이동, 300ms 이하면 tap으로 간주
-      if (dx < 10 && dy < 10 && dt < 300) {
-        handleCardClick(candidate);
-      }
+    // 20px 이하 이동, 500ms 이하면 tap으로 간주
+    if (dx < 20 && dy < 20 && dt < 500) {
+      handleCardClick(candidate);
     }
-    // 카드가 중앙에서 벗어나 있으면 드래그로 투표 (기존 로직 유지)
-    
     setTouchStart(null);
   };
 
@@ -424,10 +418,7 @@ function TinderPageContent() {
           {/* 안내 텍스트 */}
           <div className={styles.instructionContainer}>
             <p className={styles.instructionText}>
-              {windowWidth <= 400
-                ? <>카드를 드래그하여 투표하고,<br />클릭해서 상세정보를 확인하세요!</>
-                : '카드를 드래그하여 투표하고, 클릭해서 상세정보를 확인하세요!'
-              }
+              카드를 원하는 방향으로 스와이프하여 투표하세요!
             </p>
           </div>
 
