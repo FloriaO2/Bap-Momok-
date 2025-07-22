@@ -55,7 +55,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
   const handleGroupPinClick = () => {
     if (mapRef.current && typeof window !== 'undefined' && window.kakao && window.kakao.maps) {
       const moveLatLng = new window.kakao.maps.LatLng(groupData.x, groupData.y);
-      mapRef.current.setCenter(moveLatLng);
+      mapRef.current.panTo(moveLatLng);
     }
   };
 
@@ -259,7 +259,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
       const y = Number(restaurant.x);
       if (!isNaN(x) && !isNaN(y)) {
         const moveLatLng = new window.kakao.maps.LatLng(x, y);
-        mapRef.current.setCenter(moveLatLng);
+        mapRef.current.panTo(moveLatLng);
       }
     }
   };
@@ -372,7 +372,7 @@ export default function DirectTab({ groupData, groupId, onAddCandidate, register
             width: "clamp(60px, 15vw, 80px)"
           }}
         >
-          {loading ? "검색중" : "검색"}
+          {loading ? "검색" : "검색"}
         </button>
       </div>
 

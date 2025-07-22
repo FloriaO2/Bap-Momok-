@@ -296,9 +296,10 @@ function TinderPageContent() {
         <div className={styles.overlay}>
           {/* 헤더 */}
           <div className={styles.cardHeader}>
-            
-            <h2 className={styles.cardTitle}>투표하기</h2>
-            <span className={styles.progressText}>{currentCardIndex + 1} / {candidates.length}</span>
+            <div style={{ textAlign: 'center' }}>
+              <h2 className={styles.cardTitle}>투표하기</h2>
+              <span className={styles.progressText}>{currentCardIndex + 1} / {candidates.length}</span>
+            </div>
           </div>
           
           {/* 카드 컨테이너 */}
@@ -342,7 +343,7 @@ function TinderPageContent() {
                           <div>📍 {currentCandidate.detail.addr}</div>
                         )}
                         {currentCandidate.type === 'yogiyo' && currentCandidate.detail.delivery_time && (
-                          <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}분</div>
+                          <div>⏰ 배달시간: {currentCandidate.detail.delivery_time}</div>
                         )}
                       </div>
                     )}
@@ -354,22 +355,22 @@ function TinderPageContent() {
           
           {/* 방향 안내 */}
           <div className={styles.directionContainer}>
-            <div className={styles.directionRow}>
-              <div className={styles.directionItem}>
-                <span className={styles.directionText}>⬆️ 쏘쏘</span>
+            <div className={styles.directionGrid}>
+              {/* 상단 */}
+              <div className={styles.directionItem} style={{ gridArea: 'top' }}>
+                <div className={styles.directionText}>⬆️</div>
+                <div className={styles.directionText}>쏘쏘</div>
               </div>
-            </div>
-            <div className={styles.directionRow}>
-              <div className={styles.directionItem}>
-                <span className={styles.directionText}>⬅️ 싫어요</span>
+              
+              {/* 중앙 */}
+              <div className={styles.directionItem} style={{ gridArea: 'center' }}>
+                <div className={styles.directionText}>⬅️ 싫어요&nbsp;&nbsp;&nbsp;&nbsp;좋아요 ➡️</div>
               </div>
-              <div className={styles.directionItem}>
-                <span className={styles.directionText}>좋아요 ➡️</span>
-              </div>
-            </div>
-            <div className={styles.directionRow}>
-              <div className={styles.directionItem}>
-                <span className={styles.directionText}>절대 안돼 ⬇️</span>
+              
+              {/* 하단 */}
+              <div className={styles.directionItem} style={{ gridArea: 'bottom' }}>
+                <div className={styles.directionText}>안돼</div>
+                <div className={styles.directionText}>⬇️</div>
               </div>
             </div>
           </div>

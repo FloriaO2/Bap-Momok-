@@ -37,7 +37,7 @@
   left: 0;
   right: 0;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 20px;
   z-index: 10;
@@ -133,28 +133,40 @@
 
 .directionContainer {
   position: absolute;
-  bottom: 120px;
+  bottom: 105px;
   left: 0;
   right: 0;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
 }
 
-.directionRow {
-  display: flex;
-  gap: 30px;
+.directionGrid {
+  display: grid;
+  grid-template-areas: 
+    ". top ."
+    "left center right"
+    ". bottom .";
+  grid-template-columns: 80px 120px 80px;
+  grid-template-rows: 30px 30px 30px;
+  gap: 5px;
+  align-items: center;
+  justify-items: center;
 }
 
 .directionItem {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .directionText {
   color: white;
   font-size: 12px;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
 }
 
 .instructionContainer {
