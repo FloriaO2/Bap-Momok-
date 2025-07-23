@@ -76,17 +76,19 @@
   min-height: 400px !important;
 }
 
+/* 얘는 룰렛 계산 기준, 아래는 룰렛핀 이미지 이동 */
+/* 테스트용 ! 수정하려면 얘부터 */
 /* react-custom-roulette 핀 위치 조정 */
 .wheelWrapper :global(.wheel-pointer) {
   top: -20px !important;
-  left: 50% !important;
+  left: 48% !important;
   transform: translateX(-50%) rotate(90deg) !important;
 }
 
-/* gTLZXx 클래스 (룰렛 포인터) 위치 조정 - 정중앙 상단으로 */
+/* gTLZXx 클래스 (룰렛 포인터) 위치 조정 - 살짝 오른쪽으로 */
 .wheelWrapper :global(.gTLZXx) {
   top: -20px !important;
-  left: 50% !important;
+  left: 53% !important;
   transform: translateX(-50%) rotate(-45deg) !important;
   position: absolute !important;
 }
