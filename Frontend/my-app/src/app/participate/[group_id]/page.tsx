@@ -522,13 +522,29 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
                   <button 
                     onClick={shareLink}
                     style={{ 
-                      background: "none", 
+                      background: "#FEE500", 
                       border: "none", 
                       cursor: "pointer",
-                      padding: "5px"
+                      padding: "0px 6px",
+                      borderRadius: "6px",
+                      fontSize: "10px",
+                      fontWeight: "bold",
+                      color: "#3C1E1E",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      transition: "all 0.2s ease"
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = "#FDD835";
+                      e.currentTarget.style.transform = "scale(1.05)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = "#FEE500";
+                      e.currentTarget.style.transform = "scale(1)";
                     }}
                   >
-                    📤
+                    KAKAO
                   </button>
                 </div>
               </div>
