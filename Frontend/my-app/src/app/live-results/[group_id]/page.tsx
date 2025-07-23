@@ -67,15 +67,29 @@ export default function LiveResultsPage() {
     // 3초 내에 클릭해야 연속으로 인정
     if (now - lastClickTime > 3000) {
       setClickCount(1);
+      setLastClickTime(now);
+      
+      // 디버그용: 터치 카운트를 화면에 표시 (임시)
+      console.log(`터치 카운트: 1/10`);
+      
+      // 1회 클릭 시 즉시 이동 (테스트용)
+      if (1 >= 10) {
+        console.log('10회 터치 완료! best-couple로 이동합니다.');
+        router.push(`/best-couple/${groupId}`);
+      }
     } else {
-      setClickCount(prev => prev + 1);
-    }
-    
-    setLastClickTime(now);
-    
-    // 20회 클릭 시 best-couple 페이지로 이동
-    if (clickCount + 1 >= 10) {
-      router.push(`/best-couple/${groupId}`);
+      const newCount = clickCount + 1;
+      setClickCount(newCount);
+      setLastClickTime(now);
+      
+      // 디버그용: 터치 카운트를 화면에 표시 (임시)
+      console.log(`터치 카운트: ${newCount}/10`);
+      
+      // 즉시 이동 체크
+      if (newCount >= 10) {
+        console.log('10회 터치 완료! best-couple로 이동합니다.');
+        router.push(`/best-couple/${groupId}`);
+      }
     }
   };
 
@@ -262,6 +276,21 @@ export default function LiveResultsPage() {
             >
               홈으로 가기
             </button>
+          </div>
+          
+          {/* 디버그용 터치 카운트 표시 (임시) */}
+          <div style={{ 
+            position: "fixed", 
+            top: "10px", 
+            right: "10px", 
+            background: "rgba(0,0,0,0.7)", 
+            color: "white", 
+            padding: "5px 10px", 
+            borderRadius: "5px", 
+            fontSize: "12px",
+            zIndex: 1000
+          }}>
+            터치: {clickCount}/10
           </div>
         </div>
       </div>
