@@ -9,16 +9,7 @@ const Wheel = dynamic(() => import('react-custom-roulette').then(mod => ({ defau
   loading: () => <div>로딩 중...</div>
 });
 
-// Wheel 마운트/언마운트 추적용 HOC
-const DebugWheel = (props: any) => {
-  useEffect(() => {
-    console.log('[DebugWheel] 마운트됨', props.key);
-    return () => {
-      console.log('[DebugWheel] 언마운트됨', props.key);
-    };
-  }, []);
-  return <Wheel {...props} />;
-};
+// DebugWheel 및 디버깅용 useEffect, console.log 모두 삭제
 
 interface Restaurant {
   id: string;
@@ -84,9 +75,7 @@ export default function RandomRoom({ groupId, isModal = false, onAddCandidate }:
   // Wheel 마운트/언마운트 추적
   useEffect(() => {
     if (!showWheel) return;
-    console.log('[Wheel] 마운트됨, key:', wheelKey);
     return () => {
-      console.log('[Wheel] 언마운트됨, key:', wheelKey);
     };
   }, [showWheel, wheelKey]);
 
@@ -826,7 +815,7 @@ export default function RandomRoom({ groupId, isModal = false, onAddCandidate }:
       <div className={styles.wheelContainer}>
         <div className={styles.wheelWrapper}>
           {showWheel && (
-            <DebugWheel
+            <Wheel
               key={wheelKey}
               mustStartSpinning={mustSpin}
               prizeNumber={prizeNumber}

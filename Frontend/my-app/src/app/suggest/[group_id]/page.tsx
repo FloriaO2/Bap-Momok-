@@ -455,9 +455,23 @@ export default function SuggestPage({ params }: { params: Promise<{ group_id: st
                 isModal={true}
                 onAddCandidate={async (candidate) => {
                   if (candidate.type === 'kakao') {
+                    const kakaoId = String(candidate.detail?.kakao_id || candidate.detail?.id || candidate.id);
+                    console.log('[중복체크] kakaoId:', kakaoId, 'registeredKakaoIds:', registeredKakaoIds.map(String));
+                    if (registeredKakaoIds.map(String).includes(kakaoId)) {
+                      showToast('이미 후보로 추가된 식당입니다!');
+                      setShowRandomModal(false);
+                      return;
+                    }
                     await addKakaoCandidate(candidate.detail || candidate);
                     setShowRandomModal(false);
                   } else if (candidate.type === 'yogiyo') {
+                    const yogiyoId = String(candidate.detail?.yogiyo_id || candidate.detail?.id || candidate.id);
+                    console.log('[중복체크] yogiyoId:', yogiyoId, 'registeredYogiyoIds:', registeredYogiyoIds.map(String));
+                    if (registeredYogiyoIds.map(String).includes(yogiyoId)) {
+                      showToast('이미 후보로 추가된 식당입니다!');
+                      setShowRandomModal(false);
+                      return;
+                    }
                     await addYogiyoCandidate(candidate.detail || candidate);
                     setShowRandomModal(false);
                   } else {
