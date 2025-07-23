@@ -16,6 +16,8 @@ export default function LiveResultsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [clickCount, setClickCount] = useState<number>(0);
+  const [lastClickTime, setLastClickTime] = useState<number>(0);
 
   useEffect(() => {
     if (!groupId) return;
@@ -57,6 +59,25 @@ export default function LiveResultsPage() {
   }, [groupId]);
 
   console.log("candidates state:", candidates);
+
+  // 20회 클릭 시 best-couple 페이지로 이동하는 핸들러 (이스터에그)
+  const handleSecretClick = () => {
+    const now = Date.now();
+    
+    // 3초 내에 클릭해야 연속으로 인정
+    if (now - lastClickTime > 3000) {
+      setClickCount(1);
+    } else {
+      setClickCount(prev => prev + 1);
+    }
+    
+    setLastClickTime(now);
+    
+    // 20회 클릭 시 best-couple 페이지로 이동
+    if (clickCount + 1 >= 10) {
+      router.push(`/best-couple/${groupId}`);
+    }
+  };
 
   // 후보별로 옵션별 투표자 닉네임 목록 반환 함수
   const getVoteMembersByOption = (candidateId: string | number, option: string): string[] => {
@@ -137,20 +158,27 @@ export default function LiveResultsPage() {
           -webkit-text-stroke: 0px #222;
         }
       `}</style>
-      <div style={{ 
-        minHeight: "100vh", 
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        padding: "20px",
-        fontFamily: "Arial, sans-serif"
-      }}>
-        <div style={{ 
-          maxWidth: "600px", 
-          margin: "0 auto", 
-          background: "#fff", 
-          borderRadius: "20px", 
-          padding: "30px", 
-          boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
-        }}>
+      <div 
+        style={{ 
+          minHeight: "100vh", 
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          padding: "20px",
+          fontFamily: "Arial, sans-serif",
+          cursor: "pointer"
+        }}
+        onClick={handleSecretClick}
+      >
+                  <div 
+            style={{ 
+              maxWidth: "600px", 
+              margin: "0 auto", 
+              background: "#fff", 
+              borderRadius: "20px", 
+              padding: "30px", 
+              boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
           {/* 제목 */}
           <h1 style={{ 
             fontSize: "32px", 

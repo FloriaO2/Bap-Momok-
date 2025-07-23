@@ -22,6 +22,8 @@ export default function BestCouplePage() {
   const [error, setError] = useState<string | null>(null);
   const [bestCouple, setBestCouple] = useState<BestCoupleResponse | null>(null);
   const [groupData, setGroupData] = useState<GroupData | null>(null);
+  const [clickCount, setClickCount] = useState<number>(0);
+  const [lastClickTime, setLastClickTime] = useState<number>(0);
 
   useEffect(() => {
     if (!groupId) return;
@@ -44,54 +46,101 @@ export default function BestCouplePage() {
       .finally(() => setLoading(false));
   }, [groupId]);
 
+  // 5회 클릭 시 홈으로 이동하는 핸들러 (이스터에그)
+  const handleSecretClick = () => {
+    const now = Date.now();
+    
+    // 3초 내에 클릭해야 연속으로 인정
+    if (now - lastClickTime > 3000) {
+      setClickCount(1);
+    } else {
+      setClickCount(prev => prev + 1);
+    }
+    
+    setLastClickTime(now);
+    
+    // 5회 클릭 시 홈으로 이동
+    if (clickCount + 1 >= 5) {
+      window.location.href = '/';
+    }
+  };
+
   if (loading) return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}>
-      <div style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#222'}}>
+    <div 
+      onClick={handleSecretClick}
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer"
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#222'}}
+      >
         로딩 중...
       </div>
     </div>
   );
   if (error) return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}>
-      <div style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#994d52'}}>
+    <div 
+      onClick={handleSecretClick}
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer"
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#994d52'}}
+      >
         {error}
       </div>
     </div>
   );
   if (!bestCouple || !groupData) return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}>
-      <div style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#222'}}>
+    <div 
+      onClick={handleSecretClick}
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer"
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#222'}}
+      >
         데이터가 없습니다.
       </div>
     </div>
   );
   if (!bestCouple.best_couple || bestCouple.best_couple.length < 2) return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }}>
-      <div style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#222'}}>
+    <div 
+      onClick={handleSecretClick}
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer"
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#222'}}
+      >
         비교할 참가자가 충분하지 않습니다.
       </div>
     </div>
@@ -107,21 +156,28 @@ export default function BestCouplePage() {
   const voteColor = { good: "#994d52", soso: "#bdb76b", bad: "#e57373", never: "#616161" };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
-      padding: "20px",
-      fontFamily: "Arial, sans-serif"
-    }}>
-      <div style={{
-        maxWidth: 600,
-        margin: "40px auto",
-        background: "#fff",
-        borderRadius: 20,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-        padding: 40,
-        border: "none"
-      }}>
+    <div 
+      onClick={handleSecretClick}
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
+        padding: "20px",
+        fontFamily: "Arial, sans-serif",
+        cursor: "pointer"
+      }}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxWidth: 600,
+          margin: "40px auto",
+          background: "#fff",
+          borderRadius: 20,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+          padding: 40,
+          border: "none"
+        }}
+      >
         <h2 style={{textAlign:'center', marginBottom:24, color:'#222', fontWeight:700, fontSize:28, letterSpacing:-1}}>Best Couple</h2>
         <div style={{display:'flex', justifyContent:'center', alignItems:'center', marginBottom:24}}>
           <div style={{fontWeight:'bold', fontSize:20, color:'#222'}}>{name1}</div>
