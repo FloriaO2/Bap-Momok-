@@ -62,10 +62,15 @@ export default function LiveResultsPage() {
 
   // 20회 클릭 시 best-couple 페이지로 이동하는 핸들러 (이스터에그)
   const handleSecretClick = () => {
+    // 이미 10회 이상 클릭했으면 무시
+    if (clickCount >= 10) {
+      return;
+    }
+    
     const now = Date.now();
     
-    // 3초 내에 클릭해야 연속으로 인정
-    if (now - lastClickTime > 3000) {
+    // 1초 내에 클릭해야 연속으로 인정 (시간 제한 단축)
+    if (now - lastClickTime > 1000) {
       setClickCount(1);
       setLastClickTime(now);
       
@@ -75,7 +80,7 @@ export default function LiveResultsPage() {
       // 1회 클릭 시 즉시 이동 (테스트용)
       if (1 >= 10) {
         console.log('10회 터치 완료! best-couple로 이동합니다.');
-        router.push(`/best-couple/${groupId}`);
+        window.location.href = `/best-couple/${groupId}`;
       }
     } else {
       const newCount = clickCount + 1;
@@ -88,7 +93,7 @@ export default function LiveResultsPage() {
       // 즉시 이동 체크
       if (newCount >= 10) {
         console.log('10회 터치 완료! best-couple로 이동합니다.');
-        router.push(`/best-couple/${groupId}`);
+        window.location.href = `/best-couple/${groupId}`;
       }
     }
   };
@@ -276,21 +281,6 @@ export default function LiveResultsPage() {
             >
               홈으로 가기
             </button>
-          </div>
-          
-          {/* 디버그용 터치 카운트 표시 (임시) */}
-          <div style={{ 
-            position: "fixed", 
-            top: "10px", 
-            right: "10px", 
-            background: "rgba(0,0,0,0.7)", 
-            color: "white", 
-            padding: "5px 10px", 
-            borderRadius: "5px", 
-            fontSize: "12px",
-            zIndex: 1000
-          }}>
-            터치: {clickCount}/10
           </div>
         </div>
       </div>

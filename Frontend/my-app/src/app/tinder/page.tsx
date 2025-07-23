@@ -307,26 +307,109 @@ function TinderPageContent() {
     console.log('[렌더] 모든 후보 투표 완료! 완료 메시지 표시');
     return (
       <div className={styles.container}>
-        <div className={styles.completionContainer}>
-          <h2 className={styles.completionTitle}>모든 후보를 투표했습니다!</h2>
-          <p className={styles.completionText}>
-            투표가 완료되었습니다.<br/>
-            <span style={{fontWeight:'bold', color:'#994d52', fontSize:'20px'}}>
-              서버 반영: {voteDoneCount} / {totalVotes} ({percent}%)
-            </span><br/>
-            모든 투표가 서버에 반영되면 결과 화면으로 이동할 수 있습니다.
-          </p>
-          {showResultButton && (
-            <button
-              style={{marginTop:'24px', fontSize:'20px', padding:'12px 32px', background:'#994d52', color:'#fff', border:'none', borderRadius:'8px', cursor:'pointer'}}
-              onClick={() => {
-                console.log('[결과화면 넘어가기 버튼] 클릭! window.location.href로 이동');
-                window.location.href = `/live-results/${groupId}`;
-              }}
-            >
-              결과화면 넘어가기
-            </button>
-          )}
+        <div 
+          className={styles.backgroundImage}
+          style={{
+            backgroundImage: 'url(/background_img.png)',
+            animation: 'backgroundMove 20s ease-in-out infinite'
+          }}
+        >
+          <div className={styles.overlay}>
+            <div className={styles.completionContainer}>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.95)',
+                borderRadius: '24px',
+                padding: '40px',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                textAlign: 'center',
+                maxWidth: '500px',
+                margin: '0 auto'
+              }}>
+                <div style={{
+                  fontSize: '64px',
+                  marginBottom: '20px',
+                  animation: 'bounce 2s infinite'
+                }}>
+                  🎉
+                </div>
+                <h2 style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: '#333',
+                  marginBottom: '16px',
+                  marginTop: '0'
+                }}>
+                  투표 완료!
+                </h2>
+                <p style={{
+                  fontSize: '16px',
+                  color: '#666',
+                  lineHeight: '1.6',
+                  marginBottom: '24px'
+                }}>
+                  모든 후보에 대한 투표가 완료되었습니다.
+                </p>
+                
+                {/* 진행률 표시 */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                  borderRadius: '16px',
+                  padding: '20px',
+                  marginBottom: '24px',
+                  border: '1px solid #dee2e6'
+                }}>
+                  <div style={{
+                    fontSize: '14px',
+                    color: '#6c757d',
+                    marginBottom: '8px'
+                  }}>
+                    서버 반영 진행률
+                  </div>
+                  <div style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: '#994d52',
+                    marginBottom: '8px'
+                  }}>
+                    {voteDoneCount} / {totalVotes}
+                  </div>
+                  <div style={{
+                    background: '#e9ecef',
+                    borderRadius: '8px',
+                    height: '8px',
+                    overflow: 'hidden',
+                    marginBottom: '8px'
+                  }}>
+                    <div style={{
+                      background: 'linear-gradient(90deg, #994d52 0%, #c82333 100%)',
+                      height: '100%',
+                      width: `${percent}%`,
+                      transition: 'width 0.5s ease',
+                      borderRadius: '8px'
+                    }} />
+                  </div>
+                  <div style={{
+                    fontSize: '14px',
+                    color: '#6c757d'
+                  }}>
+                    {percent}% 완료
+                  </div>
+                </div>
+                
+                <p style={{
+                  fontSize: '14px',
+                  color: '#888',
+                  lineHeight: '1.5',
+                  marginBottom: '24px'
+                }}>
+                  모든 투표가 서버에 반영되면<br/>
+                  결과 화면으로 이동할 수 있습니다.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

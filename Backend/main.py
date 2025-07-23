@@ -526,7 +526,7 @@ def get_best_couple(group_id: str):
     candidate_ids = list(group.candidates.keys())
     num_candidates = len(candidate_ids)
     if num_candidates < 2:
-        raise HTTPException(status_code=400, detail="후보가 2명 이상이어야 합니다")
+        return {"best_couple": [], "best_couple_ids": [], "max_inner_product": None}
 
     # 투표값을 벡터로 변환
     vote_map = {"good": 3, "soso": 1, "bad": -1, "never": -3}

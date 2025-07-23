@@ -29,29 +29,81 @@ export default function BestCouplePage() {
     if (!groupId) return;
     setLoading(true);
     setError(null);
+    
+    // best_couple API 호출
     fetch(`${BACKEND_URL}/groups/${groupId}/best_couple`)
-      .then(res => {
-        if (!res.ok) throw new Error("best_couple API 호출 실패");
+      .then(async res => {
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`best_couple API 호출 실패: ${res.status} - ${errorText}`);
+        }
         return res.json();
       })
-      .then(data => setBestCouple(data))
-      .catch(e => setError(e.message));
+      .then(data => {
+        console.log('best_couple 데이터 성공:', data);
+        setBestCouple(data);
+      })
+      .catch(e => {
+        console.log('best_couple API 에러 발생:', e.message);
+        setError(e.message);
+        setLoading(false);
+      });
+    
+    // 그룹 데이터 API 호출
     fetch(`${BACKEND_URL}/groups/${groupId}`)
       .then(res => {
         if (!res.ok) throw new Error("그룹 데이터 조회 실패");
         return res.json();
       })
-      .then(data => setGroupData(data))
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
+      .then(data => {
+        console.log('그룹 데이터 성공:', data);
+        setGroupData(data);
+        setLoading(false);
+      })
+      .catch(e => {
+        console.log('그룹 데이터 에러 발생:', e.message);
+        setError(e.message);
+        setLoading(false);
+      });
   }, [groupId]);
+
+  // 에러 발생 시 3초 후 홈으로 이동
+  useEffect(() => {
+    console.log('에러 상태 변경:', error);
+    if (error) {
+      console.log('에러 발생! 5초 후 홈으로 이동합니다.');
+      const timer = setTimeout(() => {
+        console.log('타이머 실행! 홈으로 이동합니다.');
+        window.location.href = '/';
+      }, 5000);
+      return () => {
+        console.log('타이머 정리');
+        clearTimeout(timer);
+      };
+    }
+  }, [error]);
+
+  // 빈 결과일 때도 3초 후 홈으로 이동
+  useEffect(() => {
+    if (bestCouple && (!bestCouple.best_couple || bestCouple.best_couple.length === 0)) {
+      console.log('빈 결과! 5초 후 홈으로 이동합니다.');
+      const timer = setTimeout(() => {
+        console.log('빈 결과 타이머 실행! 홈으로 이동합니다.');
+        window.location.href = '/';
+      }, 5000);
+      return () => {
+        console.log('빈 결과 타이머 정리');
+        clearTimeout(timer);
+      };
+    }
+  }, [bestCouple]);
 
   // 5회 클릭 시 홈으로 이동하는 핸들러 (이스터에그)
   const handleSecretClick = () => {
     const now = Date.now();
     
-    // 3초 내에 클릭해야 연속으로 인정
-    if (now - lastClickTime > 3000) {
+    // 1초 내에 클릭해야 연속으로 인정 (시간 제한 단축)
+    if (now - lastClickTime > 1000) {
       setClickCount(1);
     } else {
       setClickCount(prev => prev + 1);
@@ -103,10 +155,13 @@ export default function BestCouplePage() {
         onClick={(e) => e.stopPropagation()}
         style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#994d52'}}
       >
-        {error}
+        <div style={{marginBottom: 20}}>{error}</div>
+        <div style={{fontSize: 14, color: '#666'}}>3초 후 홈으로 이동합니다...</div>
       </div>
     </div>
   );
+  console.log('렌더링 상태:', { bestCouple, groupData, loading, error });
+  
   if (!bestCouple || !groupData) return (
     <div 
       onClick={handleSecretClick}
@@ -145,7 +200,14 @@ export default function BestCouplePage() {
         onClick={(e) => e.stopPropagation()}
         style={{background: "#fff", borderRadius: 20, padding: 40, textAlign: "center", boxShadow: "0 10px 30px rgba(0,0,0,0.2)", color:'#222'}}
       >
-        비교할 참가자가 충분하지 않습니다.
+        <div style={{marginBottom: 15}}>
+          {!bestCouple.best_couple || bestCouple.best_couple.length === 0 
+            ? "후보가 2명 이상이어야 Best Couple을 찾을 수 있습니다." 
+            : "비교할 참가자가 충분하지 않습니다."}
+        </div>
+        <div style={{fontSize: 14, color: '#666'}}>
+          5초 후 홈으로 이동합니다...
+        </div>
       </div>
     </div>
   );

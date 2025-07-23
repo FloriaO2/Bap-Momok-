@@ -2,19 +2,8 @@
 import React, { useState, useEffect, use } from "react";
 import Head from 'next/head';
 // Firebase SDK import
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, onValue, off } from "firebase/database";
-
-// TODO: 아래 firebaseConfig를 본인 프로젝트 정보로 교체하세요
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  databaseURL: "https://bap-momok-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  // ...etc
-};
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+import { ref, onValue, off } from "firebase/database";
+import { database } from "../../../firebase";
 
 export default function ParticipatePage({ params }: { params: Promise<{ group_id: string }> }) {
   const resolvedParams = use(params);
@@ -152,7 +141,7 @@ export default function ParticipatePage({ params }: { params: Promise<{ group_id
   };
 
   useEffect(() => {
-    const participantsRef = ref(db, `groups/${groupId}/participants`);
+    const participantsRef = ref(database, `groups/${groupId}/participants`);
     const unsubscribe = onValue(participantsRef, (snapshot) => {
       setParticipants(snapshot.val() || {});
     });
