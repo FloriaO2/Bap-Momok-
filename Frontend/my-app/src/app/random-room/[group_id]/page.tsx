@@ -87,36 +87,80 @@ export default function RandomRoomPage() {
     fetchGroupData();
   }, [groupId]);
 
-  // 카테고리 정규화 함수
+  // Fisher-Yates 셔플 함수
+  const shuffleArray = (array: any[]): any[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // 카테고리 정규화 함수 - 더 정확한 분류
   const normalizeCategory = (category: string): string => {
-    if (category.includes('치킨') || category.includes('닭')) {
+    const normalized = category.toLowerCase();
+    
+    // 카테고리 분류 (우선순위 순서대로)
+    if (normalized.includes('치킨') || normalized.includes('닭') || normalized.includes('후라이드') || normalized.includes('양념치킨')) {
       return '치킨';
-    } else if (category.includes('피자')) {
+    }
+    if (normalized.includes('피자')) {
       return '피자';
-    } else if (category.includes('햄버거') || category.includes('버거') || category.includes('패스트푸드')) {
-      return '햄버거';
-    } else if (category.includes('중식') || category.includes('중국')) {
-      return '중식';
-    } else if (category.includes('일식') || category.includes('일본') || category.includes('참치회') || category.includes('돈까스')) {
-      return '일식';
-    } else if (category.includes('양식') || category.includes('서양') || category.includes('이탈리안')) {
-      return '양식';
-    } else if (category.includes('한식') || category.includes('한국') || category.includes('해장국') || category.includes('삼겹살') || category.includes('족발') || category.includes('보쌈') || category.includes('한정식')) {
-      return '한식';
-    } else if (category.includes('카페') || category.includes('커피') || category.includes('디저트')) {
-      return '카페';
-    } else if (category.includes('분식')) {
+    }
+    if (normalized.includes('햄버거') || normalized.includes('버거') || normalized.includes('패스트푸드') || normalized.includes('샌드위치')) {
+      return '패스트푸드';
+    }
+    if (normalized.includes('분식') || normalized.includes('떡볶이') || normalized.includes('김밥')) {
       return '분식';
-    } else if (category.includes('도시락')) {
-      return '도시락';
-    } else if (category.includes('뷔페')) {
+    }
+    if (normalized.includes('카페') || normalized.includes('커피') || normalized.includes('음료')) {
+      return '카페';
+    }
+    if (normalized.includes('디저트') || normalized.includes('베이커리') || normalized.includes('빵') || normalized.includes('케이크')) {
+      return '디저트';
+    }
+    if (normalized.includes('중식') || normalized.includes('중국') || normalized.includes('중화요리')) {
+      return '중식';
+    }
+    if (normalized.includes('일식') || normalized.includes('일본') || normalized.includes('참치회') || normalized.includes('돈까스') || normalized.includes('초밥') || normalized.includes('라멘')) {
+      return '일식';
+    }
+    if (normalized.includes('양식') || normalized.includes('서양') || normalized.includes('이탈리안') || normalized.includes('스테이크') || normalized.includes('파스타')) {
+      return '양식';
+    }
+    if (normalized.includes('고기') || normalized.includes('갈비') || normalized.includes('삼겹살') || normalized.includes('족발') || normalized.includes('보쌈')) {
+      return '고기';
+    }
+    if (normalized.includes('해물') || normalized.includes('생선') || normalized.includes('회')) {
+      return '해산물';
+    }
+    if (normalized.includes('면') || normalized.includes('국수') || normalized.includes('라면')) {
+      return '면류';
+    }
+    if (normalized.includes('밥') || normalized.includes('덮밥') || normalized.includes('비빔밥') || normalized.includes('도시락')) {
+      return '밥류';
+    }
+    if (normalized.includes('샐러드') || normalized.includes('건강식')) {
+      return '건강식';
+    }
+    if (normalized.includes('뷔페')) {
       return '뷔페';
-    } else if (category.includes('해물') || category.includes('생선')) {
-      return '해물';
+    }
+    if (normalized.includes('술') || normalized.includes('술집') || normalized.includes('호프')) {
+      return '술집';
+    }
+    if (normalized.includes('한식') || normalized.includes('한국') || normalized.includes('해장국') || normalized.includes('한정식') || normalized.includes('국밥')) {
+      return '한식';
     }
     
-    let normalized = category.split('>')[0].trim();
-    return normalized;
+    // 기본 카테고리 추출 (카카오맵 형식: "음식점 > 패스트푸드 > 햄버거")
+    let parts = category.split('>').map(part => part.trim());
+    if (parts.length >= 2) {
+      return parts[1]; // 두 번째 부분 사용 (예: "패스트푸드")
+    }
+    
+    return parts[0] || '기타';
   };
 
   // 카카오맵 스크립트 로드 확인
@@ -174,6 +218,9 @@ export default function RandomRoomPage() {
 
   // 식당 데이터 가져오기 함수
     const fetchRestaurants = async () => {
+      // 랜덤 시드 추가 (매번 다른 결과를 위해)
+      console.log('랜덤 시드:', Date.now());
+      
     console.log('fetchRestaurants 시작');
     console.log('groupData:', groupData);
     
@@ -197,42 +244,42 @@ export default function RandomRoomPage() {
           const ps = new window.kakao.maps.services.Places();
           const allKakaoResults: any[] = [];
           
-          // 다양한 검색 키워드로 검색
-          const searchKeywords = ['맛집', '음식점', '식당', '한식', '중식', '일식', '양식', '치킨', '피자', '햄버거'];
-          
-          for (const keyword of searchKeywords) {
+          // categorySearch로 7페이지만 검색
+          for (let page = 1; page <= 3; page++) { // 페이지 수 줄이기
+            await new Promise(res => setTimeout(res, 300)); // 300ms 딜레이
             try {
-              // 여러 페이지에서 검색 (페이지 1~10)
-              for (let page = 1; page <= 10; page++) {
-                const searchOptions = {
-                  location: new window.kakao.maps.LatLng(groupData.x, groupData.y),
-                  radius: groupData.radius,
-                  category_group_code: 'FD6',
-                  size: 15,
-                  page: page
-                };
+              const searchOptions = {
+                location: new window.kakao.maps.LatLng(groupData.x, groupData.y),
+                radius: groupData.radius,
+                category_group_code: 'FD6',
+                size: 15,
+                page: page
+              };
 
-                console.log(`카카오맵 검색: ${keyword} (페이지 ${page})`);
-                const kakaoResults = await new Promise((resolve, reject) => {
-                  ps.keywordSearch(keyword, (data: any, status: any) => {
-                    console.log(`카카오맵 검색 결과 (${keyword} 페이지 ${page}):`, { status, dataLength: data?.length });
-                    if (status === window.kakao.maps.services.Status.OK) {
-                      console.log(`카카오맵 검색 성공 (${keyword} 페이지 ${page})`);
-                      resolve(data);
-                    } else {
-                      console.log(`카카오맵 검색 실패 (${keyword} 페이지 ${page}):`, status);
-                      resolve([]); // 실패해도 빈 배열 반환
-                    }
-                  }, searchOptions);
-                });
-                
-                allKakaoResults.push(...(kakaoResults as any[]));
-                
-                // 검색 결과가 적으면 다음 페이지는 건너뛰기
-                if ((kakaoResults as any[]).length < 15) break;
+              console.log(`카카오맵 categorySearch (페이지 ${page})`);
+              const kakaoResults = await new Promise((resolve, reject) => {
+                ps.categorySearch('FD6', (data: any, status: any) => {
+                  console.log(`카카오맵 검색 결과 (페이지 ${page}):`, { status, dataLength: data?.length });
+                  if (status === window.kakao.maps.services.Status.OK) {
+                    console.log(`카카오맵 검색 성공 (페이지 ${page})`);
+                    resolve(data);
+                  } else {
+                    console.log(`카카오맵 검색 실패 (페이지 ${page}):`, status);
+                    resolve([]); // 실패해도 빈 배열 반환
+                  }
+                }, searchOptions);
+              });
+              
+              allKakaoResults.push(...(kakaoResults as any[]));
+              
+              // 검색 결과가 적으면 더 이상 요청하지 않음
+              if ((kakaoResults as any[]).length < 15) {
+                console.log(`페이지 ${page}에서 검색 결과가 부족하여 검색 중단`);
+                break;
               }
             } catch (err) {
-              console.error(`카카오맵 API 호출 오류 (${keyword}):`, err);
+              console.error(`카카오맵 API 호출 오류 (페이지 ${page}):`, err);
+              break; // 오류 발생 시 검색 중단
             }
           }
 
@@ -295,28 +342,36 @@ export default function RandomRoomPage() {
         const selectByCategory = (restaurants: Restaurant[], maxCount: number): Restaurant[] => {
           const selected: Restaurant[] = [];
           
+          // 1단계: 카테고리별로 분류 (카페 제외)
           const categoryGroups = new Map<string, Restaurant[]>();
           restaurants.forEach(restaurant => {
             const category = normalizeCategory(restaurant.category);
+            // 카페 카테고리 제외
+            if (category === '카페') {
+              return;
+            }
             if (!categoryGroups.has(category)) {
               categoryGroups.set(category, []);
             }
             categoryGroups.get(category)!.push(restaurant);
           });
           
-          const categories = Array.from(categoryGroups.keys());
-          const shuffledCategories = categories.sort(() => Math.random() - 0.5);
+          console.log('카테고리별 분류 결과:', Array.from(categoryGroups.entries()).map(([cat, rest]) => `${cat}: ${rest.length}개`));
           
-          // 1단계: 카테고리별로 하나씩 선택
+          // 2단계: 카테고리별로 하나씩 랜덤 선택
+          const categories = Array.from(categoryGroups.keys());
+          const shuffledCategories = shuffleArray(categories);
+          
           for (const category of shuffledCategories) {
             if (selected.length >= maxCount) break;
             
             const restaurantsInCategory = categoryGroups.get(category)!;
             const randomRestaurant = restaurantsInCategory[Math.floor(Math.random() * restaurantsInCategory.length)];
             selected.push(randomRestaurant);
+            console.log(`선택됨: ${randomRestaurant.name} (${category})`);
           }
           
-          // 2단계: 10개가 안 되면 중복 카테고리에서 추가 선택
+          // 3단계: 10개가 안 되면 중복 카테고리 허용하여 추가 선택
           if (selected.length < maxCount) {
             console.log(`카테고리별 선택 후 ${selected.length}개, ${maxCount}개까지 추가 선택`);
             
@@ -324,17 +379,19 @@ export default function RandomRoomPage() {
             const selectedIds = new Set(selected.map(r => r.id));
             
             // 모든 식당을 하나의 배열로 합치고 랜덤하게 섞기
-            const allRestaurants = restaurants.filter(r => !selectedIds.has(r.id));
-            const shuffledAll = allRestaurants.sort(() => Math.random() - 0.5);
+            const remainingRestaurants = restaurants.filter(r => !selectedIds.has(r.id));
+            const shuffledRemaining = remainingRestaurants.sort(() => Math.random() - 0.5);
             
             // 남은 자리만큼 추가 선택
-            for (const restaurant of shuffledAll) {
+            for (const restaurant of shuffledRemaining) {
               if (selected.length >= maxCount) break;
               selected.push(restaurant);
+              console.log(`추가 선택됨: ${restaurant.name} (${normalizeCategory(restaurant.category)})`);
             }
           }
           
           console.log(`최종 선택된 식당 개수: ${selected.length}`);
+          console.log('최종 선택된 식당들:', selected.map(r => `${r.name} (${normalizeCategory(r.category)})`));
           return selected;
         };
         
@@ -342,51 +399,71 @@ export default function RandomRoomPage() {
         const selectedYogiyo = selectByCategory(yogiyoRestaurants, 5);
         finalRestaurants = [...selectedKakao, ...selectedYogiyo];
       } else if (groupData.offline || groupData.delivery) {
-        const selectByCategory = (restaurants: Restaurant[], maxCount: number): Restaurant[] => {
-          const selected: Restaurant[] = [];
-          
-          const categoryGroups = new Map<string, Restaurant[]>();
-          restaurants.forEach(restaurant => {
-            const category = normalizeCategory(restaurant.category);
-            if (!categoryGroups.has(category)) {
-              categoryGroups.set(category, []);
-            }
-            categoryGroups.get(category)!.push(restaurant);
-          });
-          
-          const categories = Array.from(categoryGroups.keys());
-          const shuffledCategories = categories.sort(() => Math.random() - 0.5);
-          
-          // 1단계: 카테고리별로 하나씩 선택
-          for (const category of shuffledCategories) {
-            if (selected.length >= maxCount) break;
+                  const selectByCategory = (restaurants: Restaurant[], maxCount: number): Restaurant[] => {
+            const selected: Restaurant[] = [];
             
-            const restaurantsInCategory = categoryGroups.get(category)!;
-            const randomRestaurant = restaurantsInCategory[Math.floor(Math.random() * restaurantsInCategory.length)];
-            selected.push(randomRestaurant);
-          }
-          
-          // 2단계: 10개가 안 되면 중복 카테고리에서 추가 선택
-          if (selected.length < maxCount) {
-            console.log(`카테고리별 선택 후 ${selected.length}개, ${maxCount}개까지 추가 선택`);
+            // 1단계: 카테고리별로 분류 (카페 제외)
+            const categoryGroups = new Map<string, Restaurant[]>();
+            restaurants.forEach(restaurant => {
+              const category = normalizeCategory(restaurant.category);
+              // 카페 카테고리 제외
+              if (category === '카페') {
+                return;
+              }
+              if (!categoryGroups.has(category)) {
+                categoryGroups.set(category, []);
+              }
+              categoryGroups.get(category)!.push(restaurant);
+            });
             
-            // 이미 선택된 식당 ID 집합
-            const selectedIds = new Set(selected.map(r => r.id));
+            console.log('카테고리별 분류 결과:', Array.from(categoryGroups.entries()).map(([cat, rest]) => `${cat}: ${rest.length}개`));
             
-            // 모든 식당을 하나의 배열로 합치고 랜덤하게 섞기
-            const allRestaurants = restaurants.filter(r => !selectedIds.has(r.id));
-            const shuffledAll = allRestaurants.sort(() => Math.random() - 0.5);
+            // 2단계: 카테고리별로 하나씩 랜덤 선택 (중복 이름 제외)
+            const categories = Array.from(categoryGroups.keys());
+            const shuffledCategories = shuffleArray(categories);
+            const selectedNames = new Set<string>(); // 선택된 식당 이름 추적
             
-            // 남은 자리만큼 추가 선택
-            for (const restaurant of shuffledAll) {
+            for (const category of shuffledCategories) {
               if (selected.length >= maxCount) break;
-              selected.push(restaurant);
+              
+              const restaurantsInCategory = categoryGroups.get(category)!;
+              const shuffledRestaurants = shuffleArray(restaurantsInCategory);
+              
+              // 중복 이름이 아닌 첫 번째 식당 선택
+              for (const restaurant of shuffledRestaurants) {
+                if (!selectedNames.has(restaurant.name)) {
+                  selected.push(restaurant);
+                  selectedNames.add(restaurant.name);
+                  console.log(`선택됨: ${restaurant.name} (${category})`);
+                  break;
+                }
+              }
             }
-          }
-          
-          console.log(`최종 선택된 식당 개수: ${selected.length}`);
-          return selected;
-        };
+            
+            // 3단계: 10개가 안 되면 중복 카테고리 허용하여 추가 선택 (중복 이름 제외)
+            if (selected.length < maxCount) {
+              console.log(`카테고리별 선택 후 ${selected.length}개, ${maxCount}개까지 추가 선택`);
+              
+              // 이미 선택된 식당 ID 집합
+              const selectedIds = new Set(selected.map(r => r.id));
+              
+              // 모든 식당을 하나의 배열로 합치고 랜덤하게 섞기
+              const remainingRestaurants = restaurants.filter(r => !selectedIds.has(r.id) && !selectedNames.has(r.name));
+              const shuffledRemaining = shuffleArray(remainingRestaurants);
+              
+              // 남은 자리만큼 추가 선택
+              for (const restaurant of shuffledRemaining) {
+                if (selected.length >= maxCount) break;
+                selected.push(restaurant);
+                selectedNames.add(restaurant.name);
+                console.log(`추가 선택됨: ${restaurant.name} (${normalizeCategory(restaurant.category)})`);
+              }
+            }
+            
+            console.log(`최종 선택된 식당 개수: ${selected.length}`);
+            console.log('최종 선택된 식당들:', selected.map(r => `${r.name} (${normalizeCategory(r.category)})`));
+            return selected;
+          };
         
         finalRestaurants = selectByCategory(allRestaurants, 10);
       }
@@ -454,7 +531,7 @@ export default function RandomRoomPage() {
         fontWeight: 'bold',
         textAlign: 'center',
         lineHeight: '1.1'
-      }
+    }
     };
   });
 
@@ -656,7 +733,32 @@ export default function RandomRoomPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>🍽️ 랜덤 식당 룰렛 🍽️</h1>
-        <p>무엇을 먹을까요?</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', justifyContent: 'center' }}>
+          <p>무엇을 먹을까요?</p>
+          <button
+            onClick={handleRefresh}
+            style={{ 
+              background: "transparent", 
+              color: "#fff", 
+              border: "none", 
+              borderRadius: "25px", 
+              fontSize: "14px", 
+              fontWeight: "bold", 
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              display: "flex",
+              alignItems: "center"
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+            }}
+          >
+            🔄
+          </button>
+        </div>
         {restaurants.length < 10 && restaurants.length > 0 && (
           <>
           <p style={{ color: '#ffd700', fontSize: '0.9rem', marginTop: '10px'}}>
@@ -719,13 +821,10 @@ export default function RandomRoomPage() {
           >
             <h3>{selectedRestaurant.name}</h3>
             {selectedRestaurant.type === 'yogiyo' && (
-              <p className={styles.rating}>⭐ {selectedRestaurant.rating}</p>
+            <p className={styles.rating}>⭐ {selectedRestaurant.rating}</p>
             )}
             <p className={styles.category}>{selectedRestaurant.category}</p>
             <p className={styles.address}>{selectedRestaurant.address}</p>
-            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '10px' }}>
-              👆 클릭하여 상세정보 보기
-            </p>
           </div>
         </div>
       )}
@@ -754,33 +853,6 @@ export default function RandomRoomPage() {
       </div>
 
       <div style={{ marginTop: "30px", marginBottom: "30px", textAlign: "center", display: "flex", gap: "15px", justifyContent: "center", flexWrap: "wrap" }}>
-        <button
-          onClick={handleRefresh}
-          style={{ 
-            background: "#28a745", 
-            color: "#fff", 
-            border: "none", 
-            borderRadius: "25px", 
-            padding: "12px 24px", 
-            fontSize: "16px", 
-            fontWeight: "bold", 
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px"
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = "#218838";
-            e.currentTarget.style.transform = "translateY(-2px)";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = "#28a745";
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
-          🔄 새로운 식당
-        </button>
         <button
           onClick={handleGoHome}
           style={{ 
@@ -824,7 +896,7 @@ export default function RandomRoomPage() {
             <button
               onClick={() => setModalOpen(false)}
               style={{
-                position: "absolute", top: 20, right: 20, background: "none", border: "none", fontSize: 24, cursor: "pointer", zIndex: 2
+                position: "absolute", top: 38, right: 15, background: "none", border: "none", fontSize: 24, cursor: "pointer", zIndex: 2
               }}
             >✕</button>
             {modalInfo.type === 'kakao' ? (
