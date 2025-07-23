@@ -167,6 +167,7 @@ export default function LiveResultsPage() {
           cursor: "pointer"
         }}
         onClick={handleSecretClick}
+        onTouchStart={handleSecretClick}
       >
                   <div 
             style={{ 

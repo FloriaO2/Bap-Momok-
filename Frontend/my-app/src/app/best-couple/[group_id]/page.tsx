@@ -68,6 +68,7 @@ export default function BestCouplePage() {
   if (loading) return (
     <div 
       onClick={handleSecretClick}
+      onTouchStart={handleSecretClick}
       style={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
@@ -88,6 +89,7 @@ export default function BestCouplePage() {
   if (error) return (
     <div 
       onClick={handleSecretClick}
+      onTouchStart={handleSecretClick}
       style={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
@@ -108,6 +110,7 @@ export default function BestCouplePage() {
   if (!bestCouple || !groupData) return (
     <div 
       onClick={handleSecretClick}
+      onTouchStart={handleSecretClick}
       style={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
@@ -128,6 +131,7 @@ export default function BestCouplePage() {
   if (!bestCouple.best_couple || bestCouple.best_couple.length < 2) return (
     <div 
       onClick={handleSecretClick}
+      onTouchStart={handleSecretClick}
       style={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
@@ -158,6 +162,7 @@ export default function BestCouplePage() {
   return (
     <div 
       onClick={handleSecretClick}
+      onTouchStart={handleSecretClick}
       style={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #fbeaec 0%, #f3e9e7 100%)",
