@@ -23,7 +23,7 @@
 ## 🤷 What is Bap! Momok?
 
 **Bap! Momok?은 이런 웹앱입니다.**
-<img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/3b432f88-eecb-4673-bad4-89f45acbec02" />
+<img width="200" height="200" alt="image" src="https://github.com/user-attachments/assets/3b432f88-eecb-4673-bad4-89f45acbec02" />
 
 
 ✅ 별도 로그인 없이 **그룹을 만들고 식사 장소를 함께 결정**할 수 있는 웹앱
@@ -73,13 +73,11 @@
 
 ### 친구들과 함께 취향에 맞춰 식당을 고르세요!
 
-![vote room 생성.gif](attachment:1b3bfe53-282d-4aca-8766-b4445ebb4335:vote_room_생성.gif)
+![vote%20room%20%EC%83%9D%EC%84%B1](https://github.com/user-attachments/assets/d3b1dba9-28d9-4b84-944b-40200317c277)
+![vote%20room%20%ED%9B%84%EB%B3%B4%20%EC%B6%94%EA%B0%80](https://github.com/user-attachments/assets/b716d1a2-5d73-430b-8c7d-0dd14a1c4d9a)
+![vote%20room%20%ED%88%AC%ED%91%9C](https://github.com/user-attachments/assets/7161b778-e3b3-4a47-a402-50391e2a3c91)
+![vote%20room%20%EC%88%9C%EC%9C%84%20%EB%B3%80%EB%8F%99](https://github.com/user-attachments/assets/38f21386-0e5c-43b6-a7d2-18a004273a37)
 
-![vote room 후보 추가.gif](attachment:984e3d31-85b9-4efa-83fe-7d1840451f2f:vote_room_후보_추가.gif)
-
-![vote room 투표.gif](attachment:812a1805-cb2b-40d9-8e03-00c893b29d83:vote_room_투표.gif)
-
-![vote room 순위 변동.gif](attachment:65ecb155-9d82-4788-80af-b147f803ac1a:vote_room_순위_변동.gif)
 
 **✅ 조건 입력 → 후보 추가 → 투표 → 결과 확인!**
 
@@ -88,13 +86,14 @@
 3. 투표 시간에 각 식당의 상세정보를 보고 good/soso/bad/hate로 평가해요
 4. 실시간으로 투표 결과를 집계해 상위권 식당을 추천해줘요
 
-![1000047578.jpg](attachment:29702ba5-428c-40f2-b76b-d969713ff0dd:1000047578.jpg)
+<img width="200" alt="image" src="https://github.com/user-attachments/assets/851924c8-f170-4902-8390-c08703e018aa" />
+https://github.com/user-attachments/assets/5a5fbf14-caf1-4164-af1f-2135625b9cdf
+https://github.com/user-attachments/assets/54b2fb43-34af-496d-a5da-e1c040dd939a
+<img width="200" height="2128" alt="image" src="https://github.com/user-attachments/assets/80521450-e25c-4b2e-aa70-7519309d98dc" />
 
-[1000047579.mp4](attachment:8d0ca89c-77c6-4abb-b843-de8b8e54f70d:1000047579.mp4)
 
-[1000047583.mp4](attachment:d23340dd-c634-4b85-a391-004fdd5051a9:1000047583.mp4)
 
-![1000047590.jpg](attachment:a541087a-17c8-4f41-b65d-a0b08f416fb3:1000047590.jpg)
+
 
 **💡 간단한 참여는 물론, 위치 정보 및 메뉴 확인까지!**
 
@@ -110,7 +109,8 @@
 
 ### 카테고리별 추천 식당으로 재미있는 룰렛 게임!
 
-![random room.gif](attachment:691e999e-26e1-45ef-be0f-dab1fec91a65:random_room.gif)
+<img width="200"  alt="image" src="https://github.com/user-attachments/assets/a76f6fb4-b46c-4dd8-9062-e9004bdc9469" />
+
 
 **✅ 새로고침 가능한 룰렛 + 상세 정보 확인까지!**
 
@@ -127,7 +127,8 @@
 
 ### 당신과 가장 비슷한 취향의 친구는 누구일까요?
 
-![스크린샷 2025-08-08 204354.png](attachment:cd40336b-b004-4f4f-8453-158b0be6bf54:스크린샷_2025-08-08_204354.png)
+<img width="200"  alt="image" src="https://github.com/user-attachments/assets/b6738e78-59a3-4c05-b8c7-1efdedf097f1" />
+
 
 **✅ 취향 분석으로 알아보는 오늘의 커플 매칭!**
 
