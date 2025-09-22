@@ -87,8 +87,11 @@
 4. 실시간으로 투표 결과를 집계해 상위권 식당을 추천해줘요
 
 <img width="200" alt="image" src="https://github.com/user-attachments/assets/851924c8-f170-4902-8390-c08703e018aa" />
-https://github.com/user-attachments/assets/5a5fbf14-caf1-4164-af1f-2135625b9cdf
-https://github.com/user-attachments/assets/54b2fb43-34af-496d-a5da-e1c040dd939a
+
+영상: https://github.com/user-attachments/assets/5a5fbf14-caf1-4164-af1f-2135625b9cdf
+
+영상: https://github.com/user-attachments/assets/54b2fb43-34af-496d-a5da-e1c040dd939a
+
 <img width="200" height="2128" alt="image" src="https://github.com/user-attachments/assets/80521450-e25c-4b2e-aa70-7519309d98dc" />
 
 
@@ -147,9 +150,6 @@ https://github.com/user-attachments/assets/54b2fb43-34af-496d-a5da-e1c040dd939a
 ### [백재호](https://www.notion.so/2205a1b835578068aed7e733c2777125?pvs=21)
 
 - 밥 뭐먹을지 고민되는 아주 사소한 문제에서 시작하여 여기까지 올 수 있어서 뿌듯하다.
-- 바이브코딩의 정점을 찍어봤다.
-- 실제로 짠 코드가 과연 몇줄이나 될지 궁금하다
-- 바이브코딩의 장단을 경험해볼 수 있는 좋은 기회였다.
 - 열심히 옆에서 고생해준 지원누나에게 감사하다.
 
 ### [이지원](https://www.notion.so/2225a1b8355780ceb3e8fdf43bfbee42?pvs=21)
